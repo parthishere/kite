@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/docs/4.0/assets/img/favicons/favicon.ico">
+
+    <title>OpenAlgo | A Algo Trading Software</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/sign-in/">
+
+    <!-- Bootstrap core CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+
+    <!-- Custom styles for this template -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  </head>
+
+  <body class="text-center">
+    <form class="form-signin">
+      <img class="mb-4" src="{% static 'img/zerodhalogo.png' %}" alt="" width="92" height="72">
+      {% comment %} <button class="btn btn-lg btn-primary btn-block" type="submit">Signin with Zerodha</button> {% endcomment %}
+        <a href="https://kite.zerodha.com/connect/login?v=3&api_key=vx69n80awe84d7pb" class="btn btn-lg btn-primary btn-block">Signin with Zerodha</a>
+        <p class="mt-5 mb-3 text-muted">&copy; 2022-2023</p>
+    </form>
+  </body>
+</html>
+
