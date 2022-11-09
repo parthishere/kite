@@ -18,7 +18,7 @@ import datetime
 import requests
 import warnings
 
-from .__version__ import __version__, __title__
+from kiteconnect.__version__ import __version__, __title__
 import kiteconnect.exceptions as ex
 
 log = logging.getLogger(__name__)

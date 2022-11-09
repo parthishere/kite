@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Algo watchlist</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
+{% comment %} <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round"> {% endcomment %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -17,27 +17,9 @@
 $(document).ready(function(){
 	// Activate tooltip
 	$('[data-toggle="tooltip"]').tooltip();
-	
-	// Select/Deselect checkboxes
-	var checkbox = $('table tbody input[type="checkbox"]');
-	$("#selectAll").click(function(){
-		if(this.checked){
-			checkbox.each(function(){
-				this.checked = true;                        
-			});
-		} else{
-			checkbox.each(function(){
-				this.checked = false;                        
-			});
-		} 
-	});
-	checkbox.click(function(){
-		if(!this.checked){
-			$("#selectAll").prop("checked", false);
-		}
-	});
 });
 </script>
+
 {% endblock head %}
 {% block title %} OpenAlgo {% endblock title %}
 {% block body %} 
@@ -50,10 +32,13 @@ $(document).ready(function(){
                         <div class="col-sm-6">
                             <h2>Watchlist <b>for Algo Stocks</b></h2>
                         </div>
-                        <div class="col-sm-6">
-                            <a href="#addEmployeeModal" class="btn btn-info" data-toggle="modal"><i class="material-icons">&#xE147;</i> <span> Add Stocks</span></a>
-                            <a href="#" class="btn btn-success"><span> Start All</span></a>
-                            <a href="#" class="btn btn-danger"><span>Stop All</span></a>						
+                        <div class="col-sm-6 autocomplete"><span class="float-right">
+                            <form autocomplete="off" action="/action_page.php">
+                                <input id="myInput" name="myCountry" type="text" placeholder="Search Script">
+                                <a href="#" class="btn btn-success" onclick="startAll()"><span> Start All</span></a>
+                                <a href="#" class="btn btn-danger" onclick="stopAll()"><span>Stop All</span></a>
+                              </form>
+                            				
                         </div>
                     </div>
                 </div>
@@ -71,63 +56,32 @@ $(document).ready(function(){
                         </tr>
                     </thead>
                     <tbody>
+                        {% for instrument in algoWatchlistArray %}
                         <tr>
-                            <td>{{name}}</td>
-                            <td>11000.50</td>
-                            <td>10000.40</td>
-                            <td><input type="text" name='qty[]'  placeholder='Enter Qty' class="form-control"/></td>
-                            <td><a href="#" class="btn btn-info"><span> Scale Up</span></a></td>
-                            <td><a href="#" class="btn btn-warning"><span> Scale Down</span></a></td>
+                            <td>{{instrument.instruments}}</td>
+                            <td >{{instrument.entryprice}}</td>
+                            {% comment %} <td>{{instrument.lastTradedPrice}}</td> {% endcomment %}
+                            <td id="ltp">2</td>
+                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "1"/></td>
+                            <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
+                            <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
                             <td>
-                                {% if algo == off %}
-                                    <a href="#" class="btn btn-danger"><span> Exit & Stop Algo</span></a>
+                                {% if instrument.startAlgo != False %}
+                                    <a href="#" class="btn btn-danger" onclick="stopAlgo('{{instrument.instruments}}')"><span> Exit & Stop Algo</span></a>
                                 {% else %}
-                                    <a href="#" class="btn btn-success"><span> Start Algo</span></a>
+                                    <a href="#" class="btn btn-success" onclick="startAlgo('{{instrument.instruments}}')"><span> Start Algo</span></a>
                                 {% endif %}
                             </td>
                             <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
                         </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>        
     </div>
-    <!-- Edit Modal HTML -->
-    <div id="addEmployeeModal" class="modal fade">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form>
-                    <div class="modal-header">						
-                        <h4 class="modal-title">Add Employee</h4>
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    </div>
-                    <div class="modal-body">					
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Address</label>
-                            <textarea class="form-control" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Phone</label>
-                            <input type="text" class="form-control" required>
-                        </div>					
-                    </div>
-                    <div class="modal-footer">
-                        <input type="button" class="btn btn-default" data-dismiss="modal" value="Cancel">
-                        <input type="submit" class="btn btn-success" value="Add">
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
+    <!-- Positions Table -->
     <div class="container-fluid">
         <div class="table-responsive">
             <div class="table-wrapper">
@@ -154,25 +108,219 @@ $(document).ready(function(){
                         </tr>
                     </thead>
                     <tbody>
+                        {% for position in positionArray %}
                         <tr>
-                            <td>Banknifty 3rd Nov 41000 CE</td>
-                            <td>1000</td>
-                            <td>314.40</td>
-                            <td>345.45</td>
-                            <td>375.55</td>
-                            <td>+90000</td>
-                            <td>+90000</td>
-                            <td>0</td>
+                            <td>{{position.instruments}}</td>
+                            <td>{{position.qty}}</td>
+                            <td>{{position.entryprice}}</td>
+                            <td>{{position.avgTradedPrice}}</td>
+                            <td>{{position.lastTradedPrice}}</td>
+                            {% if  position.pnl > 0 %}
+                                <td style="color: green; font-weight:bold">{{position.pnl}}</td>
+                            {% else %}
+                                <td style="color: red; font-weight:bold">{{position.pnl}}</td>
+                            {% endif %}                                
+                            <td>{{position.unrealised}}</td>
+                            <td>{{position.realised}}</td>
                             <td>
-                                <a href="#" class="btn btn-danger"><span> Exit & Stop Algo</span></a>
+                                <a href="#" class="btn btn-danger" onclick="stopAlgo('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
                             </td>
                             <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
                         </tr>
+                        {% endfor %}
+                        <tr style="background: #f6f8ff;">
+                            <td style="font-weight:bold">Total</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            {% if  totalPNL > 0 %}
+                                <td style="color: green; font-weight:bold">{{totalPNL}}</td>
+                            {% else %}
+                                <td style="color: red; font-weight:bold">{{totalPNL}}</td>
+                            {% endif %}   
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        <tr>
                     </tbody>
                 </table>
             </div>
         </div>        
     </div>
     </body>
+    <script>
+        function autocomplete(inp, arr) {
+          /*the autocomplete function takes two arguments,
+          the text field element and an array of possible autocompleted values:*/
+          var currentFocus;
+          /*execute a function when someone writes in the text field:*/
+          inp.addEventListener("input", function(e) {
+              var a, b, i, val = this.value;
+              /*close any already open lists of autocompleted values*/
+              closeAllLists();
+              if (!val) { return false;}
+              currentFocus = -1;
+              /*create a DIV element that will contain the items (values):*/
+              a = document.createElement("DIV");
+              a.setAttribute("id", this.id + "autocomplete-list");
+              a.setAttribute("class", "autocomplete-items");
+              /*append the DIV element as a child of the autocomplete container:*/
+              this.parentNode.appendChild(a);
+              /*for each item in the array...*/
+              for (i = 0; i < arr.length; i++) {
+                /*check if the item starts with the same letters as the text field value:*/
+                if (arr[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                  /*create a DIV element for each matching element:*/
+                  b = document.createElement("DIV");
+                  /*make the matching letters bold:*/
+                  b.innerHTML = "<strong>" + arr[i].substr(0, val.length) + "</strong>";
+                  b.innerHTML += arr[i].substr(val.length);
+                  /*insert a input field that will hold the current array item's value:*/
+                  b.innerHTML += "<input type='hidden' value='" + arr[i] + "'>";
+                  /*execute a function when someone clicks on the item value (DIV element):*/
+                  b.addEventListener("click", function(e) {
+                      /*insert the value for the autocomplete text field:*/
+                      inp.value = this.getElementsByTagName("input")[0].value;
+                      /*close the list of autocompleted values,
+                      (or any other open lists of autocompleted values:*/
+                      closeAllLists();
+                  });
+                  a.appendChild(b);
+                }
+              }
+          });
+          /*execute a function presses a key on the keyboard:*/
+          inp.addEventListener("keydown", function(e) {
+              var x = document.getElementById(this.id + "autocomplete-list");
+              if (x) x = x.getElementsByTagName("div");
+              if (e.keyCode == 40) {
+                /*If the arrow DOWN key is pressed,
+                increase the currentFocus variable:*/
+                currentFocus++;
+                /*and and make the current item more visible:*/
+                addActive(x);
+              } else if (e.keyCode == 38) { //up
+                /*If the arrow UP key is pressed,
+                decrease the currentFocus variable:*/
+                currentFocus--;
+                /*and and make the current item more visible:*/
+                addActive(x);
+              } else if (e.keyCode == 13) {
+                /*If the ENTER key is pressed, prevent the form from being submitted,*/
+                e.preventDefault();
+                if (currentFocus > -1) {
+                  /*and simulate a click on the "active" item:*/
+                  if (x) x[currentFocus].click();
+                }
+              }
+          });
+          function addActive(x) {
+            /*a function to classify an item as "active":*/
+            if (!x) return false;
+            /*start by removing the "active" class on all items:*/
+            removeActive(x);
+            if (currentFocus >= x.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = (x.length - 1);
+            /*add class "autocomplete-active":*/
+            x[currentFocus].classList.add("autocomplete-active");
+          }
+          function removeActive(x) {
+            /*a function to remove the "active" class from all autocomplete items:*/
+            for (var i = 0; i < x.length; i++) {
+              x[i].classList.remove("autocomplete-active");
+            }
+          }
+          function closeAllLists(elmnt) {
+            /*close all autocomplete lists in the document,
+            except the one passed as an argument:*/
+            var x = document.getElementsByClassName("autocomplete-items");
+            for (var i = 0; i < x.length; i++) {
+              if (elmnt != x[i] && elmnt != inp) {
+                x[i].parentNode.removeChild(x[i]);
+              }
+            }
+          }
+          /*execute a function when someone clicks in the document:*/
+          document.addEventListener("click", function (e) {
+              closeAllLists(e.target);
+          });
+        }
+        
+        /*An array containing all the country names in the world:*/
+        var countries = ["Afghanistan","Albania","Algeria","Andorra","Angola","Anguilla","Antigua & Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia & Herzegovina","Botswana","Brazil","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central Arfrican Republic","Chad","Chile","China","Colombia","Congo","Cook Islands","Costa Rica","Cote D Ivoire","Croatia","Cuba","Curacao","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Falkland Islands","Faroe Islands","Fiji","Finland","France","French Polynesia","French West Indies","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guam","Guatemala","Guernsey","Guinea","Guinea Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauro","Nepal","Netherlands","Netherlands Antilles","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","North Korea","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Puerto Rico","Qatar","Reunion","Romania","Russia","Rwanda","Saint Pierre & Miquelon","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","St Kitts & Nevis","St Lucia","St Vincent","Sudan","Suriname","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor L'Este","Togo","Tonga","Trinidad & Tobago","Tunisia","Turkey","Turkmenistan","Turks & Caicos","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States of America","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Virgin Islands (US)","Yemen","Zambia","Zimbabwe"];
+        /*initiate the autocomplete function on the "myInput" element, and pass along the countries array as possible autocomplete values:*/
+        autocomplete(document.getElementById("myInput"), countries);
+    </script>
+    <script>
+        setInterval(myTimer, 1000);
+        function myTimer() {
+            const d = new Date();
+            document.getElementById("ltp").innerHTML = d.toLocaleTimeString();
+          }
+        
+    </script>
+    {% block javascript %}
+    <script type="text/javascript">
+        function ScaleUpQty(clicked){
+            var qty = document.getElementById(clicked).value;
+            var multipleQty = qty*2;
+            document.getElementById(clicked).value = multipleQty;
+        }
+
+        function ScaleDownQty(clicked){
+            let qty = document.getElementById(clicked).value;
+            if (qty > 1) {
+                var multipleQty = parseInt(qty/2);
+                document.getElementById(clicked).value = multipleQty;
+            }
+        }
+
+        function startAlgo(clicked){
+            $.ajax({
+                type: "POST",
+                url: 'startAlgo',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', text: clicked },
+                success: function callback(response){
+                            console.log(response);
+                         }
+             });
+        }
+
+        function stopAlgo(clicked){
+            $.ajax({
+                type: "POST",
+                url: 'stopAlgo',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', text: clicked },
+                success: function callback(response){
+                            console.log(response);
+                         }
+             });
+        }
+
+        function startAll(){
+            $.ajax({
+                type: "POST",
+                url: 'startAll',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', text: "StartAll" },
+                success: function callback(response){
+                            console.log(response);
+                         }
+             });
+        }
+
+        function stopAll(){
+            $.ajax({
+                type: "POST",
+                url: 'stopAll',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', text: "StopAll" },
+                success: function callback(response){
+                            console.log(response);
+                         }
+             });
+        }
+        </script>
+        {% endblock %}
 
 {% endblock body %}

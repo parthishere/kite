@@ -14,6 +14,7 @@ class Preferences(models.Model):
 
 class AlgoWatchlist(models.Model):
     instruments = models.CharField(max_length = 100)
+    instrumentsToken = models.CharField(max_length = 100, default = "1111")
     entryprice = models.FloatField(default = 0.0)
     lastTradedPrice = models.FloatField(default = 0.0)
     qty = models.IntegerField(default = 1)
@@ -24,6 +25,7 @@ class AlgoWatchlist(models.Model):
 
 class ManualWatchlist(models.Model):
     instruments = models.CharField(max_length = 100)
+    instrumentsToken = models.CharField(max_length = 100, default = "1111")
     entryprice = models.FloatField(default = 0.0)
     lastTradedPrice = models.FloatField(default = 0.0)
     qty = models.IntegerField(default = 1)
@@ -34,6 +36,7 @@ class ManualWatchlist(models.Model):
 
 class Positions(models.Model):
     instruments = models.CharField(max_length = 100)
+    instrumentsToken = models.CharField(max_length = 100, default = "1111")
     qty = models.IntegerField(default = 1)
     entryprice = models.FloatField(default = 0.0)
     avgTradedPrice = models.FloatField(default = 0.0)
@@ -43,8 +46,21 @@ class Positions(models.Model):
     realised = models.FloatField(default = 0.0)
     startAlgo = models.BooleanField(default=False, null=True)
 
+class Orders(models.Model):
+    instruments = models.CharField(max_length = 100)
+    instrumentsToken = models.CharField(max_length = 100, default = "1111")
+    status = models.CharField(max_length = 100, default = "COMPLETE")
+    statusMessage = models.CharField(max_length = 100, default = "COMPLETE")
+    qty = models.IntegerField(default = 1)
+    orderId = models.CharField(max_length = 100, default = "1111")
+    orderTimestamp = models.CharField(max_length = 100, default = "2021-05-31 09:18:57")
+    orderType = models.CharField(max_length = 100, default = "LIMIT")
+    transactionType = models.CharField(max_length = 100, default = "BUY")
+    avgTradedPrice = models.FloatField(default = 0.0)
+    product = models.CharField(max_length = 100, default = "MIS")
 
-class Intruments(models.Model):
+
+class Instruments(models.Model):
     instrument_token = models.CharField(max_length = 100)
     exchange_token = models.CharField(max_length = 100)
     tradingsymbol = models.CharField(max_length = 100)

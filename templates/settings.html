@@ -3,8 +3,7 @@
 {% block head %}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Algo watchlist</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
+{% comment %} <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round"> {% endcomment %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -39,7 +38,7 @@ $(document).ready(function(){
 });
 </script>
 {% endblock head %}
-{% block title %} OpenAlgo {% endblock title %}
+{% block title %} Settings {% endblock title %}
 {% block body %}
 <div class="container-fluid px-3 mb-3">
     <h3 class="text-left">  </h3>
@@ -84,7 +83,7 @@ $(document).ready(function(){
                 </span>
             </div>
         </div>
-        <div class="row g-3 align-items-center mb-3">
+        {% comment %} <div class="row g-3 align-items-center mb-3">
             <div class="col-auto">
                 <label for="scaleupqty" class="col-form-label">Scale Up Qty</label>
             </div>
@@ -109,7 +108,7 @@ $(document).ready(function(){
                     1x (1x means 100 to 50 and 50 to 25, it will reduce to half everytime)
                 </span>
             </div>
-        </div>
+        </div> {% endcomment %}
         <div class="row g-3 align-items-center mb-3">
             <div class="col-auto">
                 <label for="openingrange" class="col-form-label">Opening Range</label>
