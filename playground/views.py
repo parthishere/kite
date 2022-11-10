@@ -28,8 +28,9 @@ instrumentArray = []
 positionArray = []
 ordersArray = []
 subscriberlist = {}
-liveData = {}
-byPassZerodha = True
+# liveData = {}
+liveData = {'ABB': {'Open': 3103.9, 'High': 3240.0, 'Low': 3054.5, 'Close': 3103.9, 'LTP': 3166.9}, 'ITC': {'Open': 359.0, 'High': 359.9, 'Low': 354.1, 'Close': 360.7, 'LTP': 356.0}, 'BPCL': {'Open': 306.0, 'High': 307.95, 'Low': 304.2, 'Close': 306.85, 'LTP': 305.5}, 'HDFC': {'Open': 2480.2, 'High': 2508.4, 'Low': 2467.8, 'Close': 2503.5, 'LTP': 2504.1}, 'RELIANCE': {'Open': 2590.0, 'High': 2596.55, 'Low': 2563.0, 'Close': 2604.0, 'LTP': 2572.5}, 'IEX': {'Open': 142.6, 'High': 142.6, 'Low': 138.85, 'Close': 142.6, 'LTP': 140.2}}
+byPassZerodha = False
 
 #Variable Required for logic implementation
 algoWatchlistEnable = False
@@ -75,13 +76,12 @@ def algowatch(request):
     instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
     instrumentObjectToAlgoWatchlistObject(instrumentUpdate)
     algoWatchlistArray = AlgoWatchlist.objects.all()
-    positionArray = getPositions()
+    # positionArray = getPositions()
     totalPNL = total_pnl()
     for tokens in algoWatchlistArray:
         if not tokens.instrumentsToken in subscriberlist:
             subscriberlist[int(tokens.instrumentsToken)] = tokens.instruments
-    # print(subscriberlist)
-
+    # coreLogic(liveData, algoWatchlistArray)
     return render(request, 'algowatch.html', {'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL})
     
 def manualwatch(request):
@@ -110,7 +110,7 @@ def orders(request):
 def settings(request):
     if kite.access_token is None and byPassZerodha:
         return redirect("/")
-
+    
     if request.method == "POST":
         time = request.POST.get('time')
         stoploss = request.POST.get('stoploss')
@@ -239,8 +239,15 @@ def on_ticks(ws, ticks):
     # Callback to receive ticks.
     # logging.debug("Ticks: {}".format(ticks))
     for stock in ticks:
-        liveData[subscriberlist[stock['instrument_token']]] = stock['last_price']
-        print(liveData)
+        liveData[subscriberlist[stock['instrument_token']]] = {"Open": stock['ohlc']['open'],
+            "Open": stock['ohlc']['open'],
+            "High": stock['ohlc']['high'],
+            "Low": stock['ohlc']['low'],
+            "Close": stock['ohlc']['close'],
+            "LTP": stock['last_price']}
+        print("Checking live data")
+        # print(liveData)
+        coreLogic(liveData)
 
 def on_connect(ws, response):
     # Callback on successful connect.
@@ -249,7 +256,7 @@ def on_connect(ws, response):
     ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
 
     # Set RELIANCE to tick in `full` mode.
-    ws.set_mode(ws.MODE_LTP, [3329, 134657, 340481, 56321, 424961, 738561])
+    ws.set_mode(ws.MODE_FULL, [3329, 134657, 340481, 56321, 424961, 738561])
 
 def on_close(ws, code, reason):
     # On connection close stop the main loop
@@ -280,84 +287,69 @@ def on_close(ws, code, reason):
 #             print("Place Sell Order")
 
 
-
+#=========================
+## Algo Core Logic Method
+#=========================
 #Steps for the logic
-#1. Run a loog for all watchlist items 
+def coreLogic(liveData, algoWatchlistArray1):
 
     #Get value from Settings
+    settings = Preferences.objects.all()
     #TG : Get % value from settings
+    tg = settings.values()[0]['target']
     #SL : Get % value from settings
+    sl = settings.values()[0]['stoploss']
     #TIME : Get seconds value from settings
+    startTime = settings.values()[0]['time']
     #OR : Get % value from settings and of difference from CMP to OPEN
+    ordp = settings.values()[0]['openingrange']
     #ORD :  Get true of fale from Settings to apply ORD or not
-    #UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
-    #LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
-    #SLHit: 0 #Counter for SL Hit for particualr script
+    ordtick = settings.values()[0]['openingrangebox']
 
-    #====For Cash Segment======#
-    #ScaleupHit: Base should be 0 and increment to 1,2,3,4 #Read the click of Scaleup button on algowatchlist, i.e 1
-    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (125*1 = 125), (125*2 = 250), (125*3 = 375)
+    # 1. Run a loog for all watchlist items 
+    for items in algoWatchlistArray1: #Reliance
 
-    #ScaledownHit: It will basically divided the qty by 2 so it will reduce qty by double
-    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (125/2 = 62.5 but it will take decimal value which is 62)
-    #====For FO Segment======#
-    #ScaleupHit: Base should be 0 and increment to 1,2,3,4 #Read the click of Scaleup button on algowatchlist, i.e 1
-    #Read FO Lot size and it will increase but its lot size (Reliance lot size is 250)
-    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (250*1 = 125), (250*2 = 250), (250*3 = 375)
+        liveValues = liveData[items.instruments]
+        #UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+        partValue = (ordp*liveValues['Open'])/100
+        ubl = liveValues['Open'] + partValue
+        #LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+        lbl = liveValues['Open'] - partValue
+        # #SLHit: 0 #Counter for SL Hit for particualr script
 
-    #ScaledownHit: It will basically divided the qty by 2 so it will reduce qty by double
-    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (250/2 = Not work as it is base lot size and not divisable further, but 
-    # for 500, 500/2 = 250)
-    #====For FO Segment======#
-
-    #ScriptQTY: Read the QTY from watchlist i.e 125
-
-
-    #Reliance
-    #IF_Check if Algo is started and Not any positon open for that script
-        #IF_ORD True
-            #IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
-                #tradeSetup()
-                #Place BUY Order (with ScriptQTY)
-                #Set SL variable
-                #Set TG Variable
-            #ELSE_#check CMP < OPEN and (CMP > LBL and CMP > UPL)
-                #tradeSetup()   
-                #Place SELL order (with ScriptQTY)
-                #Set SL variable
-                #Set TG Variable
-        #ELSE_ORD False
-            #IF_check CMP > OPEN
-                #tradeSetup()
-                #Place BUY Order (with ScriptQTY)
-                #Set SL variable
-                #Set TG Variable
-            #ELSE_#check CMP < OPEN
-                #tradeSetup()
-                #Place SELL order (with ScriptQTY)
-                #Set SL variable
-                #Set TG Variable
-    #ELSEIF_check if Algo is started and Position Open (Either Buy or Sell)
-        #IF_check if position is BUY and 
-            #if CMP <= SL
-                #tradeSetup()
-                #Place SELL order (with ScriptQTY)
-                #Set SL variable
-                #Set TG Variable
-                #SLHit count ++
-            #IF CMP >= TG
-                #Close Postions and stop algo
-        #ELSE_check if positino is SELL
-            #if CMP >= SL
-                #tradeSetup()
-                #Place BUY order (with ScriptQTY)
-                #Set SL variable
-                #Set TG Variable
-                #SLHit count ++
-            #IF CMP <= TG
-                #Close Postions and stop algo
-    #ELSE_check if algo is stopped and Position Open (Either Buy or Sell)
-        #Close postion for this script
+        if items.startAlgo and not items.openPostion: #IF_Check if Algo is started and Not any positon open for that script
+            if ordtick: #IF_ORD True 
+                if liveValues['LTP'] > liveValues['Open']: #IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
+                    tradeInitiateWithSLTG(type="BUY", scriptQty="Take it from HTML Page")
+                else: #ELSE_#check CMP < OPEN and (CMP > LBL and CMP > UPL)
+                    tradeInitiateWithSLTG(type="SELL", scriptQty="Take it from HTML Page")
+            else: #ELSE_ORD False
+                if liveValues['LTP'] > liveValues['Open']: #IF_check CMP > OPEN
+                    tradeInitiateWithSLTG(type="BUY", scriptQty="Take it from HTML Page")
+                else: #ELSE_#check CMP < OPEN
+                    tradeInitiateWithSLTG(type="SELL", scriptQty="Take it from HTML Page")
+                
+        elif items.startAlgo and items.openPostion: #ELSEIF_check if Algo is started and Position Open (Either Buy or Sell)
+            if items.positionType == "BUY": #IF_check if position is BUY and 
+                partValueSL = (sl*liveData['RELIANCE'])/100
+                partValueTG = (tg*liveData['RELIANCE'])/100
+                slValue = liveData['RELIANCE'] - partValueSL
+                tgValue = liveData['RELIANCE'] - partValueTG
+                if liveValues['LTP'] <= slValue:
+                    tradeInitiateWithSLTG(type="SELL", scriptQty="Take it from HTML Page")
+                    items.slhitCount = 1
+                if liveValues['LTP'] >= tgValue: #IF CMP >= TG
+                    tradeClose(orderId="123123") #Close Postions and stop algo
+            elif items.positionType == "SELL":#ELSE_check if positino is SELL
+                if liveValues['LTP'] >= slValue: #if CMP >= SL
+                    tradeInitiateWithSLTG(type="BUY", scriptQty="Take it from HTML Page")
+                    items.slhitCount = 1 #SLHit count ++
+                if liveValues['LTP'] <= tgValue: #IF CMP <= TG
+                    tradeClose(orderId="123123") #Close Postions and stop algo
+        elif not items.startAlgo and items.openPostion: #ELSE_check if algo is stopped and Position Open (Either Buy or Sell)
+            tradeClose(orderId="123123") #Close postion for this script
+        else:
+            print("Algo not started")
 
 
 #=========================
@@ -377,8 +369,11 @@ def startAll(request):
     algoWatchlistEnable = True
 
 def startSingle(request): #For Manual watchlist
-    print("Came from JS to start" + request.POST['text'])
-    return HttpResponse(request.POST['text'])
+    print("Came from JS to start" + request.POST['scriptQty'])
+    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
+    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
+    return HttpResponse(request.POST['script'])
+    
     # tradeInitiateWithSLTG(type, scriptQty, scriptCode)
 
 def buySingle(request): #For Manual watchlist
@@ -390,8 +385,10 @@ def sellSingle(request): #For Manual watchlist
     return HttpResponse(request.POST['text'])
 
 def stopSingle(request): #For Manual and Algo watchlist
-    print("Came from JS to stop" + request.POST['text'])
-    return HttpResponse(request.POST['text'])
+    print("Came from JS to stop" + request.POST['scriptQty'])
+    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = False)
+    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
+    return HttpResponse(request.POST['script'])
     # tradeClose(orderId=orderId)
 
 def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, slprtg, tgprtg):
@@ -418,9 +415,32 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, slprtg, tgp
         else:
             SLPrice = 1.0 #Calculate from price that order placed and + slprtg
             TGPrice = 1.0 #Calculate from price that order placed and - tgprtg
+        AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = True)
     except Exception as e:
         logging.info("Order placement failed: {}".format(e.message))
         messages.error("Order placement failed: {}".format(e.message))
 
-def tradeClose(orderId):
+def tradeClose(orderId, scriptCode):
+    AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
     kite.exit_order(variety=kite.VARIETY_REGULAR, order_id=orderId)
+
+
+
+
+#====For Cash Segment======#
+    #ScaleupHit: Base should be 0 and increment to 1,2,3,4 #Read the click of Scaleup button on algowatchlist, i.e 1
+    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (125*1 = 125), (125*2 = 250), (125*3 = 375)
+
+    #ScaledownHit: It will basically divided the qty by 2 so it will reduce qty by double
+    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (125/2 = 62.5 but it will take decimal value which is 62)
+    #====For FO Segment======#
+    #ScaleupHit: Base should be 0 and increment to 1,2,3,4 #Read the click of Scaleup button on algowatchlist, i.e 1
+    #Read FO Lot size and it will increase but its lot size (Reliance lot size is 250)
+    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (250*1 = 125), (250*2 = 250), (250*3 = 375)
+
+    #ScaledownHit: It will basically divided the qty by 2 so it will reduce qty by double
+    #CalculateQTYForNextTrade = ScriptQTY*ScaleupHit (250/2 = Not work as it is base lot size and not divisable further, but 
+    # for 500, 500/2 = 250)
+    #====For FO Segment======#
+
+    #ScriptQTY: Read the QTY from watchlist i.e 125

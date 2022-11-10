@@ -21,6 +21,7 @@ class AlgoWatchlist(models.Model):
     scaleup = models.IntegerField(default = 1)
     scaledown = models.IntegerField(default = 1)
     startAlgo = models.BooleanField(default=False, null=True)
+    openPostion = models.BooleanField(default=False, null=True)
 
 
 class ManualWatchlist(models.Model):
@@ -32,6 +33,7 @@ class ManualWatchlist(models.Model):
     scaleup = models.IntegerField(default = 1)
     scaledown = models.IntegerField(default = 1)
     startAlgo = models.BooleanField(default=False, null=True)
+    openPostion = models.BooleanField(default=False, null=True)
 
 
 class Positions(models.Model):
