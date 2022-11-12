@@ -66,7 +66,7 @@ $(document).ready(function(){
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
                             <td>
-                                {% if instrument.startAlgo != False %}
+                                {% if instrument.openPostion != False %}
                                     <a href="#" class="btn btn-danger" onclick="stopAlgo('{{instrument.instruments}}')"><span> Exit & Stop Algo</span></a>
                                 {% else %}
                                     <a href="#" class="btn btn-success" onclick="startAlgo('{{instrument.instruments}}')"><span> Start Algo</span></a>
