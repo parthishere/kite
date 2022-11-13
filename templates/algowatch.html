@@ -294,7 +294,7 @@ $(document).ready(function(){
             $.ajax({
                 type: "POST",
                 url: 'stopAlgo',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1 },
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1, isFromAlgoTest: "true" },
                 success: function callback(response){
                             console.log(response);
                          }
