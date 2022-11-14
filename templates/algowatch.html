@@ -100,11 +100,10 @@ $(document).ready(function(){
                             <th scope="col">Entry Price</th>
                             <th scope="col">Average Price</th>
                             <th scope="col">LTP</th>
-                            <th scope="col">PNL</th>
-                            <th scope="col">Unrealised</th>
-                            <th scope="col">Realised</th>
+                            {% comment %} <th scope="col">Unrealised</th> {% endcomment %}
+                            {% comment %} <th scope="col">Realised</th> {% endcomment %}
                             <th scope="col">Actions</th>
-                            <th scope="col">Delete</th>
+                            <th scope="col">PNL</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -114,22 +113,26 @@ $(document).ready(function(){
                             <td>{{position.qty}}</td>
                             <td>{{position.entryprice}}</td>
                             <td>{{position.avgTradedPrice}}</td>
-                            <td>{{position.lastTradedPrice}}</td>
+                            <td>{{position.lastTradedPrice}}</td>                        
+                            {% comment %} <td>{{position.unrealised}}</td> {% endcomment %}
+                            {% comment %} <td>{{position.realised}}</td> {% endcomment %}
+                            {% if  position.qty == 0 %}
+                                <td style="color: black; font-weight:bold">Closed</td>
+                            {% else %}
+                                <td>
+                                    <a href="#" class="btn btn-danger" onclick="stopAlgo('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
+                                </td>
+                            {% endif %}   
                             {% if  position.pnl > 0 %}
                                 <td style="color: green; font-weight:bold">{{position.pnl}}</td>
                             {% else %}
                                 <td style="color: red; font-weight:bold">{{position.pnl}}</td>
-                            {% endif %}                                
-                            <td>{{position.unrealised}}</td>
-                            <td>{{position.realised}}</td>
-                            <td>
-                                <a href="#" class="btn btn-danger" onclick="stopAlgo('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
-                            </td>
-                            <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                            {% endif %}  
                         </tr>
                         {% endfor %}
                         <tr style="background: #f6f8ff;">
                             <td style="font-weight:bold">Total</td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -139,10 +142,7 @@ $(document).ready(function(){
                             {% else %}
                                 <td style="color: red; font-weight:bold">{{totalPNL}}</td>
                             {% endif %}   
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
+                            
                         <tr>
                     </tbody>
                 </table>

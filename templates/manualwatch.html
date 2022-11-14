@@ -54,8 +54,22 @@ $(document).ready(function(){
                             <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "1"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
-                            <td><a href="#" class="btn btn-success" title="Click to buy" onclick="BuyOrder('{{instrument.instruments}}')"><span> Buy</span></a></td>
-                            <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('{{instrument.instruments}}')"><span> Sell</span></a></td>
+                            
+                            {% if  instrument.openPostion %}
+                                {% if  instrument.positionType == "BUY" %}
+                                    <td style="color: green; font-weight:bold">Open Position</td>
+                                    <td style="color: green; font-weight:bold">-</td>
+                                {% elif  instrument.positionType == "SELL" %}
+                                    <td style="color: green; font-weight:bold">-</td>
+                                    <td style="color: green; font-weight:bold">Open Position</td>
+                                {% else %}
+                                    <td style="color: green; font-weight:bold">-</td>
+                                    <td style="color: green; font-weight:bold">-</td>
+                                {% endif %} 
+                            {% else %}
+                                <td><a href="#" class="btn btn-success" title="Click to buy" onclick="BuyOrder('{{instrument.instruments}}')"><span> Buy</span></a></td>
+                                <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('{{instrument.instruments}}')"><span> Sell</span></a></td>
+                            {% endif %} 
                             <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
                         </tr>
                         {% endfor %}
@@ -83,11 +97,10 @@ $(document).ready(function(){
                             <th scope="col">Entry Price</th>
                             <th scope="col">Average Price</th>
                             <th scope="col">LTP</th>
-                            <th scope="col">PNL</th>
-                            <th scope="col">Unrealised</th>
-                            <th scope="col">Realised</th>
+                            {% comment %} <th scope="col">Unrealised</th> {% endcomment %}
+                            {% comment %} <th scope="col">Realised</th> {% endcomment %}
                             <th scope="col">Actions</th>
-                            <th scope="col">Delete</th>
+                            <th scope="col">PNL</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -98,26 +111,26 @@ $(document).ready(function(){
                             <td>{{position.entryprice}}</td>
                             <td>{{position.avgTradedPrice}}</td>
                             <td>{{position.lastTradedPrice}}</td>
+                            {% if  position.qty == 0 %}
+                                <td style="color: black; font-weight:bold">Closed</td>
+                            {% else %}
+                                <td>
+                                    <a href="#" class="btn btn-danger" onclick="stopAlgoManual('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
+                                </td>
+                            {% endif %}  
                             {% if  position.pnl > 0 %}
                                 <td style="color: green; font-weight:bold">{{position.pnl}}</td>
                             {% else %}
                                 <td style="color: red; font-weight:bold">{{position.pnl}}</td>
                             {% endif %}   
-                            <td>{{position.unrealised}}</td>
-                            <td>{{position.realised}}</td>
-                            {% if  position.qty == 0 %}
-                                <td style="color: green; font-weight:bold">Closed</td>
-                            {% else %}
-                                <td>
-                                    <a href="#" class="btn btn-danger" onclick="stopAlgoManual('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
-                                </td>
-                            {% endif %}   
-                            
-                            <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                            {% comment %} <td>{{position.unrealised}}</td> {% endcomment %}
+                            {% comment %} <td>{{position.realised}}</td> {% endcomment %}
+                             
                         </tr>
                         {% endfor %}
                         <tr>
                             <td><span style="font-weight:bold">Total</span></td>
+                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -127,8 +140,7 @@ $(document).ready(function(){
                             {% else %}
                                 <td style="color: red; font-weight:bold">{{totalPNL}}</td>
                             {% endif %}   
-                            <td></td>
-                            <td></td>
+                            
                         <tr>
                     </tbody>
                 </table>

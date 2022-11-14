@@ -17,7 +17,6 @@ from json import dumps
 from django.db.models import Q
 from django.db.models import Sum
 import datetime, time
-import threading
 from random import randint
 
 logging.basicConfig(level=logging.DEBUG)
@@ -29,14 +28,9 @@ instrumentArray = []
 positionArray = []
 ordersArray = []
 subscriberlist = {}
-# liveData = {}
-liveData = {'ABB': {'Open': 3103.9, 'High': 3240.0, 'Low': 3054.5, 'Close': 3103.9, 'LTP': 3166.9}, 'ITC': {'Open': 359.0, 'High': 359.9, 'Low': 354.1, 'Close': 360.7, 'LTP': 356.0}, 'BPCL': {'Open': 306.0, 'High': 307.95, 'Low': 304.2, 'Close': 306.85, 'LTP': 305.5}, 'HDFC': {'Open': 2480.2, 'High': 2508.4, 'Low': 2467.8, 'Close': 2503.5, 'LTP': 2504.1}, 'RELIANCE': {'Open': 2590.0, 'High': 2596.55, 'Low': 2563.0, 'Close': 2604.0, 'LTP': 2572.5}, 'IEX': {'Open': 142.6, 'High': 142.6, 'Low': 138.85, 'Close': 142.6, 'LTP': 140.2}}
+liveData = {}
+# liveData = {'ABB': {'Open': 3103.9, 'High': 3240.0, 'Low': 3054.5, 'Close': 3103.9, 'LTP': 3166.9}, 'ITC': {'Open': 359.0, 'High': 359.9, 'Low': 354.1, 'Close': 360.7, 'LTP': 356.0}, 'BPCL': {'Open': 306.0, 'High': 307.95, 'Low': 304.2, 'Close': 306.85, 'LTP': 305.5}, 'HDFC': {'Open': 2480.2, 'High': 2508.4, 'Low': 2467.8, 'Close': 2503.5, 'LTP': 2504.1}, 'RELIANCE': {'Open': 2590.0, 'High': 2596.55, 'Low': 2563.0, 'Close': 2604.0, 'LTP': 2572.5}, 'IEX': {'Open': 142.6, 'High': 142.6, 'Low': 138.85, 'Close': 142.6, 'LTP': 140.2}}
 byPassZerodha = True
-
-#Variable Required for logic implementation
-algoWatchlistEnable = False
-SLPrice = 0.0
-TGPrice = 0.0
 
 #=========================
 ## All Views Functions
@@ -58,9 +52,16 @@ def loginUser(request):
             data = kite.generate_session(request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
             kite.set_access_token(data["access_token"])
             # clearAllData()
+            instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
+            for instrumentObject in instrumentUpdate:
+                tokens = instrumentObject.get('instrument_token')
+                if not tokens in subscriberlist:
+                    # print("Adding token to subscriber list")
+                    subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
+            # print("Subscriber list")
+            # print(subscriberlist)
+            getPositions()
             # startLiveConnection(str(kite.access_token))
-            # return render(request, 'algowatch.html')
-            threading.Timer(1.0, coreLogic(liveData)).start()
             return render(request, 'home.html')
         messages.error(request, 'Authentication Failed! Please login again')
 
@@ -84,9 +85,6 @@ def algowatch(request):
     algoWatchlistArray = AlgoWatchlist.objects.all()
     positionArray = getPositions()
     totalPNL = total_pnl()
-    for tokens in algoWatchlistArray:
-        if not tokens.instrumentsToken in subscriberlist:
-            subscriberlist[int(tokens.instrumentsToken)] = tokens.instruments
     return render(request, 'algowatch.html', {'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL})
     
 def manualwatch(request):
@@ -191,6 +189,7 @@ def instrumentObjectToManualWatchlistObject(instrumentUpdate):
             manualWatlistObject = ManualWatchlist(instruments=tradingSymbol, instrumentsToken = instrumentObject.get('instrument_token'),
             exchangeType = instrumentObject.get('exchange'), segment = instrumentObject.get('segment'), instrumentType = instrumentObject.get('instrument_type'))
             manualWatlistObject.save()
+        
     
 def instrumentObjectToAlgoWatchlistObject(instrumentUpdate):
     for instrumentObject in instrumentUpdate:
@@ -215,10 +214,54 @@ def order_exists(orderId):
 def getPositions():
     positionsdict = kite.positions()
     positions = positionsdict['net']
-    for position in positions:
-        if not position_exists(position['tradingsymbol']):
-            positionObject = Positions(instruments = position['tradingsymbol'], qty = position['quantity'], entryprice = 0.0, avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = position['pnl'], unrealised = position['unrealised'], realised = position['realised'])
-            positionObject.save()
+    # print(positions)
+    if len(positions) > 0:
+        #if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
+        for position in positions:
+            print("Checking postion for " + position['tradingsymbol'])
+            #For Open Buy position
+            if int(position['quantity']) > 0: 
+                print("Checking for buy postion " + position['tradingsymbol'])
+                ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, positionType="BUY", isBuyClicked=False, isSellClicked=False)
+                if not position_exists(position['tradingsymbol']):
+                    #Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
+                    positionObject = Positions(instruments = position['tradingsymbol'], qty = position['quantity'], entryprice = position['buy_price'], avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = round(position['pnl'],2), unrealised = position['unrealised'], realised = position['realised'], startAlgo=True)
+                    positionObject.save()        
+                    getPositionAndUpdateModels(ltp=position['buy_price'],scriptCode=position['tradingsymbol'],orderId="",type="BUY")       
+                else:
+                    print("Updating New Buy Positions")
+                    getPositionAndUpdateModels(ltp=position['buy_price'],scriptCode=position['tradingsymbol'],orderId="",type="BUY")
+                    Positions.objects.filter(instruments = position['tradingsymbol']).update(qty = position['quantity'], avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = round(position['pnl'],2), unrealised = position['unrealised'], realised = position['realised'],startAlgo=True)
+
+            #For Open sell position
+            if int(position['quantity']) < 0:
+
+                print("Checking for Sell postion " + position['tradingsymbol'])
+
+                ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, positionType="SELL", isBuyClicked=False, isSellClicked=False)
+                if not position_exists(position['tradingsymbol']):
+                    #Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
+                    positionObject = Positions(instruments = position['tradingsymbol'], qty = position['quantity'], entryprice = position['sell_price'], avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = round(position['pnl'],2), unrealised = position['unrealised'], realised = position['realised'], startAlgo=True)
+                    positionObject.save()        
+                    getPositionAndUpdateModels(ltp=position['sell_price'],scriptCode=position['tradingsymbol'],orderId="",type="SELL")       
+                else:
+                    print("Updating New Sell Positions")
+                    getPositionAndUpdateModels(ltp=position['sell_price'],scriptCode=position['tradingsymbol'],orderId="",type="SELL")
+                    Positions.objects.filter(instruments = position['tradingsymbol']).update(qty = position['quantity'], avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = round(position['pnl'],2), unrealised = position['unrealised'], realised = position['realised'],startAlgo=True)
+            
+            #For Closed Positions
+            if int(position['quantity']) == 0:  
+                ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
+                print("Checking for closed postion " + position['tradingsymbol'])   
+                if not position_exists(position['tradingsymbol']):
+                    positionObject = Positions(instruments = position['tradingsymbol'], qty = position['quantity'], entryprice = 0.0, avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = round(position['pnl'],2), unrealised = position['unrealised'], realised = position['realised'], startAlgo=False)
+                    positionObject.save()        
+                else:
+                    print("Updating New Positions")
+                    Positions.objects.filter(instruments = position['tradingsymbol']).update(qty = position['quantity'], avgTradedPrice = position['average_price'], lastTradedPrice = position['last_price'], pnl = round(position['pnl'],2), unrealised = position['unrealised'], realised = position['realised'], startAlgo=False)
+    else:
+        print("No postion available")
+    
     return Positions.objects.all()
 
 def getOrders():
@@ -237,7 +280,7 @@ def getOrders():
 
 def total_pnl():
     total = Positions.objects.aggregate(TOTAL = Sum('pnl'))['TOTAL']
-    return total
+    return round(total,2)
 
 #=========================
 ## Websocket Data Connection Methods
@@ -252,23 +295,29 @@ def on_ticks(ws, ticks):
     # Callback to receive ticks.
     # logging.debug("Ticks: {}".format(ticks))
     for stock in ticks:
+        # print(stock['instrument_token'])
+        # print(list(subscriberlist.keys()))
+        # print(subscriberlist[stock['instrument_token']])
         liveData[subscriberlist[stock['instrument_token']]] = {"Open": stock['ohlc']['open'],
             "Open": stock['ohlc']['open'],
             "High": stock['ohlc']['high'],
             "Low": stock['ohlc']['low'],
             "Close": stock['ohlc']['close'],
             "LTP": stock['last_price']}
-        print("Checking live data")
-        print(liveData)
+        # print("Checking live data")
+        # print(liveData)
+        coreLogic(liveData)
 
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
-    print(subscriberlist)
-    ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
+    # ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
+    print("Starting new connection with Subscriber list")
+    print(list(subscriberlist.keys()))
+    ws.subscribe(list(subscriberlist.keys()))
 
     # Set RELIANCE to tick in `full` mode.
-    ws.set_mode(ws.MODE_FULL, [3329, 134657, 340481, 56321, 424961, 738561])
+    ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
 
 def on_close(ws, code, reason):
     # On connection close stop the main loop
@@ -282,7 +331,6 @@ def on_close(ws, code, reason):
 #=========================
 #Steps for the logic
 def coreLogic(liveData): #A methond to check 
-    print("Run every second")
     watchForAlgowatchlistBuySellLogic(liveData)
     watchForManualListBuySellLogic(liveData)
 
@@ -303,59 +351,66 @@ def watchForAlgowatchlistBuySellLogic(liveData):
 
     # 1. Run a loog for all watchlist items 
     for items in algoArray: #Reliance
-
-        liveValues = liveData[items.instruments]
-        #UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
-        partValue = (ordp*liveValues['Open'])/100
-        ubl = liveValues['Open'] + partValue
-        #LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
-        lbl = liveValues['Open'] - partValue
-        # #SLHit: 0 #Counter for SL Hit for particualr script
-        print("Checking algo for " + items.instruments)
-        if items.startAlgo and not items.openPostion: #IF_Check if Algo is started and Not any positon open for that script
-            if ordtick: #IF_ORD True check if open is in range
-                if (liveValues['LTP'] > liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl): #IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
-                    print("Opening range is selected so only checking both ltp > Open and ltp in in range")
-                    tradeInitiateWithSLTG(type="BUY", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True)
-                elif (liveValues['LTP'] < liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl): #ELSE_#check CMP < OPEN and (CMP > LBL and CMP > UPL)
-                    print("Opening range is selected so only checking both ltp < Open and ltp in in range")
-                    tradeInitiateWithSLTG(type="SELL", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True)
-            else: #ELSE_ORD False means do not check if open is in range 
-                if liveValues['LTP'] > liveValues['Open']: #IF_check CMP > OPEN
-                    print("Opening range is not selected so only checking ltp > Open")
-                    tradeInitiateWithSLTG(type="BUY", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True)
-                elif liveValues['LTP'] < liveValues['Open']: #ELSE_#check CMP < OPEN
-                    print("Opening range is not selected so only checking ltp < Open")
-                    tradeInitiateWithSLTG(type="SELL", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True)
-                
-        elif items.startAlgo and items.openPostion: #ELSEIF_check if Algo is started and Position Open (Either Buy or Sell)
-            postions = Positions.objects.filter(instruments=items.instruments)
-            if postions:
-                potionObject = postions.values()[0]
-                if potionObject['positionType'] == "BUY": #IF_check if position is BUY and 
-                    if liveValues['LTP'] <= potionObject['slPrice']:
-                        tradeInitiateWithSLTG(type="SELL", scriptQty=(items.qty)*2, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True)
-                        items.slHitCount = items.slHitCount + 1
-                    elif liveValues['LTP'] >= potionObject['tgPrice']: #IF CMP >= TG
-                        tradeClose(orderId=potionObject['orderId'], isFromAlgo=True) #Close Postions and stop algo
-                    else:
-                        print("Position BUYALGO, No SL, No TG so continue")
-                elif potionObject['positionType'] == "SELL":#ELSE_check if positino is SELL
-                    if liveValues['LTP'] >= potionObject['slPrice']: #if CMP >= SL
-                        tradeInitiateWithSLTG(type="BUY", scriptQty=(items.qty)*2, exchangeType=items.exchangeType, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True)
-                        items.slHitCount = items.slHitCount + 1 #SLHit count ++
-                    elif liveValues['LTP'] <= potionObject['tgPrice']: #IF CMP <= TG
-                        tradeClose(orderId=potionObject['orderId'], isFromAlgo=True) #Close Postions and stop algo
-                    else:
-                        print("Position SELLALGO, No SL, No TG so continue")
-        elif not items.startAlgo and items.openPostion: #ELSE_check if algo is stopped and Position Open (Either Buy or Sell)
-            postions = Positions.objects.filter(instruments=items.instruments)
-            print("Algo stopped and closing trade")
-            print(postions)
-            AlgoWatchlist.objects.filter(instruments = items.instruments).update(openPostion = False)
-            tradeClose(orderId=postions.values()[0]['orderid'], isFromAlgo=True) #Close postion for this script
+        if items.instruments in liveData:
+            liveValues = liveData[items.instruments]
+            #UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+            partValue = (ordp*liveValues['Open'])/100
+            ubl = liveValues['Open'] + partValue
+            #LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+            lbl = liveValues['Open'] - partValue
+            # #SLHit: 0 #Counter for SL Hit for particualr script
+            print("Checking algo for " + items.instruments)
+            if items.startAlgo and not items.openPostion: #IF_Check if Algo is started and Not any positon open for that script
+                if ordtick: #IF_ORD True check if open is in range
+                    if (liveValues['LTP'] > liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl): #IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
+                        print("Opening range is selected so only checking both ltp > Open and ltp in in range")
+                        tradeInitiateWithSLTG(type="BUY", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId="")
+                    elif (liveValues['LTP'] < liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl): #ELSE_#check CMP < OPEN and (CMP > LBL and CMP > UPL)
+                        print("Opening range is selected so only checking both ltp < Open and ltp in in range")
+                        tradeInitiateWithSLTG(type="SELL", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId="")
+                else: #ELSE_ORD False means do not check if open is in range 
+                    if liveValues['LTP'] > liveValues['Open']: #IF_check CMP > OPEN
+                        print("Opening range is not selected so only checking ltp > Open")
+                        tradeInitiateWithSLTG(type="BUY", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId="")
+                    elif liveValues['LTP'] < liveValues['Open']: #ELSE_#check CMP < OPEN
+                        print("Opening range is not selected so only checking ltp < Open")
+                        tradeInitiateWithSLTG(type="SELL", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId="")
+                    
+            elif items.startAlgo and items.openPostion: #ELSEIF_check if Algo is started and Position Open (Either Buy or Sell)
+                postions = Positions.objects.filter(instruments=items.instruments)
+                if postions:
+                    potionObject = postions.values()[0]
+                    if potionObject['positionType'] == "BUY": #IF_check if position is BUY and 
+                        if liveValues['LTP'] <= potionObject['slPrice']:
+                            tradeInitiateWithSLTG(type="SELL", scriptQty=(potionObject['qty'])*2, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId="")
+                            items.slHitCount = items.slHitCount + 1
+                        elif liveValues['LTP'] >= potionObject['tgPrice']: #IF CMP >= TG
+                            tradeInitiateWithSLTG(type="BUY", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+                        else:
+                            print("Position BUYALGO, No SL, No TG so continue")
+                    elif potionObject['positionType'] == "SELL":#ELSE_check if positino is SELL
+                        if liveValues['LTP'] >= potionObject['slPrice']: #if CMP >= SL
+                            tradeInitiateWithSLTG(type="BUY", scriptQty=(potionObject['qty'])*2, exchangeType=items.exchangeType, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId="")
+                            items.slHitCount = items.slHitCount + 1 #SLHit count ++
+                        elif liveValues['LTP'] <= potionObject['tgPrice']: #IF CMP <= TG
+                            tradeInitiateWithSLTG(type="SELL", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+                        else:
+                            print("Position SELLALGO, No SL, No TG so continue")
+            elif not items.startAlgo and items.openPostion: #ELSE_check if algo is stopped and Position Open (Either Buy or Sell)
+                postions = Positions.objects.filter(instruments=items.instruments)
+                if postions:
+                    potionObject = postions.values()[0]
+                    print("Not SL ot TG achived but manuaaly - Close Postions and stop algo")
+                    print(postions)
+                    AlgoWatchlist.objects.filter(instruments = items.instruments).update(openPostion = False)
+                    if potionObject['positionType'] == "BUY":
+                            tradeInitiateWithSLTG(type="SELL", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+                    if potionObject['positionType'] == "SELL":
+                            tradeInitiateWithSLTG(type="BUY", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+            else:
+                print("Nothing to trade from Algo Watchlist for " + items.instruments) 
         else:
-            print("Nothing to trade from Algo Watchlist for " + items.instruments) 
+            print("Key not exist in live data")        
     print("No script found to trade")
 
 def watchForManualListBuySellLogic(liveData):
@@ -365,52 +420,66 @@ def watchForManualListBuySellLogic(liveData):
     tg = settings.values()[0]['target']
     #SL : Get % value from settings
     sl = settings.values()[0]['stoploss']
-    buyClicked = True
-    sellClicked = False
 
     for items in manualArray: #Reliance
 
         print("Checking manual for " + items.instruments)
-        liveValues = liveData[items.instruments]
-        if items.startAlgo and not items.openPostion:
-            if items.isBuyClicked: #IF_Buy_Clicked then Place buy order no condition need to check
-                print("Buying Manually")
-                tradeInitiateWithSLTG(type="BUY", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False)
-            elif items.isSellClicked:
-                print("Selling Manually")
-                tradeInitiateWithSLTG(type="SELL", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False) 
-            else:
-                print("Nothing to trade from Manual Watchlist")
-        elif items.startAlgo and items.openPostion:
+        # print("Live Datas")
+        # print(liveData)
+        if items.instruments in liveData:
+            liveValues = liveData[items.instruments]
+            if items.startAlgo and not items.openPostion:
+                if items.isBuyClicked:   #IF_Buy_Clicked then Place buy order no condition need to check
+                    print("Buying Manually")
+                    tradeInitiateWithSLTG(type="BUY", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, orderId="", ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, isCloseTrade=False)
+                elif items.isSellClicked:
+                    print("Selling Manually")
+                    tradeInitiateWithSLTG(type="SELL", scriptQty=items.qty, exchangeType=items.exchangeType, sl=sl, tg=tg, orderId="", ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, isCloseTrade=False) 
+                else:
+                    print("Nothing to trade from Manual Watchlist")
+            elif items.startAlgo and items.openPostion:
 
-            print("Algo is running and postion is also running so checking for SL or TG")
-            postions = Positions.objects.filter(instruments=items.instruments)
-            if postions:
-                potionObject = postions.values()[0]
-                if potionObject['positionType'] == "BUY": #IF_check if position is BUY and 
-                    if liveValues['LTP'] <= potionObject['slPrice']:
-                        tradeInitiateWithSLTG(type="SELL", scriptQty=(items.qty)*2, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False)
-                        items.slHitCount = items.slHitCount + 1
-                    elif liveValues['LTP'] >= potionObject['tgPrice']: #IF CMP >= TG
-                        tradeClose(orderId=potionObject['orderId'], isFromAlgo=False, scriptCode=items.instruments) #Close Postions and stop algo
-                    else:
-                        print("Position BUYMANUAL, No SL, No TG so continue")
-                elif potionObject['positionType'] == "SELL":#ELSE_check if positino is SELL
-                    if liveValues['LTP'] >= potionObject['slPrice']: #if CMP >= SL
-                        tradeInitiateWithSLTG(type="BUY", scriptQty=(items.qty)*2, exchangeType=items.exchangeType, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False)
-                        items.slHitCount = items.slHitCount + 1 #SLHit count ++
-                    elif liveValues['LTP'] <= potionObject['tgPrice']: #IF CMP <= TG
-                        tradeClose(orderId=potionObject['orderId'], isFromAlgo=False, scriptCode=items.instruments) #Close Postions and stop algo
-                    else:
-                        print("Position SELLMANUAL, No SL, No TG so continue")
-        elif not items.startAlgo and items.openPostion:
-            print("Algo is stopped and postion is running so closing the trade")
-            postions = Positions.objects.filter(instruments=items.instruments)
-            if postions:
-                potionObject = postions.values()[0]
-                tradeClose(orderId=potionObject['orderId'], isFromAlgo=False, scriptCode=items.instruments) #Close Postions and stop algo
+                print("Algo is running and postion is also running so checking for SL or TG")
+                postions = Positions.objects.filter(instruments=items.instruments)
+                if postions:
+                    potionObject = postions.values()[0]
+                    print("SL Price = " + str(potionObject['slPrice']))
+                    print("TG Price = " + str(potionObject['tgPrice']))
+                    print("Current Price = " + str(liveValues['LTP']))
+                    if potionObject['positionType'] == "BUY": #IF_check if position is BUY and 
+                        if liveValues['LTP'] <= potionObject['slPrice']:
+                            print("SL Hit, double the qty")
+                            tradeInitiateWithSLTG(type="SELL", scriptQty=(potionObject['qty'])*2, exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId="", isCloseTrade=False)
+                            items.slHitCount = items.slHitCount + 1
+                        elif liveValues['LTP'] >= potionObject['tgPrice']: #IF CMP >= TG
+                            print("Target Achived so Close Postions and stop algo")
+                            tradeInitiateWithSLTG(type="BUY", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+                        else:
+                            print("Position BUYMANUAL, No SL, No TG so continue")
+                    elif potionObject['positionType'] == "SELL":#ELSE_check if positino is SELL
+                        if liveValues['LTP'] >= potionObject['slPrice']: #if CMP >= SL
+                            print("SL Hit, double the qty")
+                            tradeInitiateWithSLTG(type="BUY", scriptQty=(potionObject['qty'])*2, exchangeType=items.exchangeType,sl=sl, tg=tg,orderId="", ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, isCloseTrade=False)
+                            items.slHitCount = items.slHitCount + 1 #SLHit count ++
+                        elif liveValues['LTP'] <= potionObject['tgPrice']: #IF CMP <= TG
+                            print("Target achived so Close Postions and stop algo")
+                            tradeInitiateWithSLTG(type="SELL", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+                        else:
+                            print("Position SELLMANUAL, No SL, No TG so continue")
+            elif not items.startAlgo and items.openPostion:
+                print("Algo is stopped and postion is running so closing the trade")
+                postions = Positions.objects.filter(instruments=items.instruments)
+                if postions:
+                    potionObject = postions.values()[0]
+                    print("Not SL ot TG achived but manuaaly - Close Postions and stop algo")
+                    if potionObject['positionType'] == "BUY":
+                        tradeInitiateWithSLTG(type="SELL", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+                    if potionObject['positionType'] == "SELL":
+                        tradeInitiateWithSLTG(type="BUY", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
+            else:
+                print("Nothing to trade in Manual Watchlist")
         else:
-            print("Nothing to trade in Manual Watchlist")
+            print("Key not existing in live data, Wating for live data")
         
 
 
@@ -418,41 +487,13 @@ def watchForManualListBuySellLogic(liveData):
 ## Algo Commonn Methods
 #=========================
 
-def stopAll(request):
-    print("Came from JS to stop All")
-    algoArray = AlgoWatchlist.objects.all()
-    for items in algoArray:
-        AlgoWatchlist.objects.filter(instruments = items.instruments).update(startAlgo = True)
-        AlgoWatchlist.objects.filter(instruments = items.instruments).update(qty = int(request.POST['scriptQty']))
-    coreLogic(liveData)
-    return HttpResponse()
-
-def startAll(request):
-    print("Came from JS to start All")
-    algoArray = AlgoWatchlist.objects.all()
-    for items in algoArray:
-        AlgoWatchlist.objects.filter(instruments = items.instruments).update(startAlgo = False)
-        AlgoWatchlist.objects.filter(instruments = items.instruments).update(qty = int(request.POST['scriptQty']))
-    coreLogic(liveData)    
-    return HttpResponse()
-
-def startSingle(request): #For Manual watchlist
-    print("Came from JS to start" + request.POST['scriptQty'])
-    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
-    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
-    coreLogic(liveData)
-    return HttpResponse(request.POST['script'])
-    
-    # tradeInitiateWithSLTG(type, scriptQty, scriptCode)
-
 def buySingle(request): #For Manual watchlist
     print("Came from JS to buy single" + request.POST['script'])
     print("Came from JS to start" + request.POST['scriptQty'])
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isBuyClicked = True)
-    coreLogic(liveData)
-    return HttpResponse(request.POST['text'])
+    return HttpResponse(request.POST['script'])
 
 def sellSingle(request): #For Manual watchlist
     print("Came from JS to sell single" + request.POST['script'])
@@ -460,9 +501,14 @@ def sellSingle(request): #For Manual watchlist
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isSellClicked = True)
-    coreLogic(liveData)
     return HttpResponse(request.POST['text'])
 
+def startSingle(request): #For Manual watchlist
+    print("Came from JS to start" + request.POST['scriptQty'])
+    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
+    AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
+    return HttpResponse(request.POST['script'])
+    
 def stopSingle(request): #For Manual and Algo watchlist
     print("Came from JS to stop" + request.POST['script'])
     if request.POST['isFromAlgoTest'] == "true":
@@ -474,10 +520,9 @@ def stopSingle(request): #For Manual and Algo watchlist
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = False)
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isSellClicked = False)
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isBuyClicked = False)
-    coreLogic(liveData)
     return HttpResponse(request.POST['script'])
 
-def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg, isFromAlgo):
+def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg, isFromAlgo, orderId, isCloseTrade):
     #type should be "BUY" or "SELL"
     #exchangeType should be "NFO" or "NSE"
     print(type)
@@ -487,64 +532,92 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
     print(ltp)
     print(sl)
     print(tg)
+    print(isFromAlgo)
+    print(orderId)
+    print(isCloseTrade)
     #Place order (with ScriptQTY)
     try:
-        # orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
-        #             tradingsymbol=scriptCode, transaction_type=type, quantity=scriptQty,
-        #             product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
-        # logging.info("Order placed. ID is: {}".format(orderId))
-        # messages.success("Order placement failed: {}".format(e.message))
-        
-        #Set SL variable
-        #Set TG Variable
-        orderId = random_with_N_digits(4)
-        if type == "BUY":
-            partValueSL = (sl*ltp)/100
-            partValueTG = (tg*ltp)/100
-            slValue = ltp - partValueSL
-            tgValue = ltp + partValueTG
-            print("SL and TG setup after Buy")
-            print(slValue)
-            print(tgValue)
-            if position_exists(scriptCode):
-                Positions.objects.filter(instruments=scriptCode).update(slPrice=slValue, tgPrice=tgValue, entryprice=ltp, orderId=orderId, positionType="BUY")
-            else:
-                positionObject = Positions(instruments = scriptCode, qty = scriptQty, avgTradedPrice = ltp, lastTradedPrice = ltp,
-                slPrice=slValue, tgPrice=tgValue, entryprice=ltp, orderId=orderId, positionType="BUY")
-                positionObject.save()
-        else:
-            partValueSL = (sl*ltp)/100
-            partValueTG = (tg*ltp)/100
-            slValue = ltp + partValueSL
-            tgValue = ltp - partValueTG
-            print("SL and TG setup after sell")
-            print(slValue)
-            print(tgValue)
-            Positions.objects.filter(instruments=scriptCode).update(slPrice=slValue, tgPrice=tgValue, entryprice=ltp, orderId=orderId, positionType="SELL")
-        
-        if isFromAlgo:
-            AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = True)
-            algowatch(any)
-        else:
-            ManualWatchlist.objects.filter(instruments = scriptCode).update(openPostion = True)
-            manualwatch(any)
-    except Exception as e:
-        logging.info("Order placement failed: {}".format(e.message))
-        messages.error("Order placement failed: {}".format(e.message))
+        orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
+                    tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
+                    product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
+        logging.info("Order placed. ID is: {}".format(orderId))
+        orderId = ""
+        if not isCloseTrade:
 
-def tradeClose(orderId, scriptCode, isFromAlgo):
-    # kite.exit_order(variety=kite.VARIETY_REGULAR, order_id=orderId)
-    print("Closing trade for " + scriptCode)
-    if isFromAlgo:
-        AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
-    else:
-        ManualWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
-    position = Positions.objects.filter(instruments = scriptCode).update(qty=0)
-    if position:
-        print(position.values()[0])
+            print("Double the trade as SL is hit")
+            if isFromAlgo:
+                AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = True)
+            else:
+                ManualWatchlist.objects.filter(instruments = scriptCode).update(openPostion = True)
+            orderId = format(orderId)
+            # orderId = random_with_N_digits(4)
+            getPositionAndUpdateModels(ltp,scriptCode, orderId)
+        else:
+            if isFromAlgo:
+                AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
+            else:
+                ManualWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
+            if position_exists(scriptCode):
+                # getPositions()
+                Positions.objects.filter(instruments = scriptCode).update(qty=0)
+    except Exception as e:
+        logging.info("Order placement failed ")
         
-    
-    
+def getPositionAndUpdateModels(ltp, scriptCode, orderId, type):
+    if type == "BUY":
+        result = calculateSLTGPrice(ltp, type)
+        print("Modified SL Price= " + str(result[0]))
+        print("Modified TG Price= " + str(result[1]))
+        if position_exists(scriptCode):
+            Positions.objects.filter(instruments=scriptCode).update(slPrice=result[0], tgPrice=result[1], entryprice=ltp, orderId=orderId, positionType="BUY")
+    else:
+        result = calculateSLTGPrice(ltp, type)
+        print("Modified SL Price= " + str(result[0]))
+        print("Modified TG Price= " + str(result[1]))
+        if position_exists(scriptCode):
+            Positions.objects.filter(instruments=scriptCode).update(slPrice=result[0], tgPrice=result[1], entryprice=ltp, orderId=orderId, positionType="SELL")
+
+def calculateSLTGPrice(ltp, type):
+    settings = Preferences.objects.all()
+    #TG : Get % value from settings
+    tg = settings.values()[0]['target']
+    #SL : Get % value from settings
+    sl = settings.values()[0]['stoploss']
+    if type == "BUY":
+        partValueSL = (sl*ltp)/100
+        partValueTG = (tg*ltp)/100
+        slValue = ltp - partValueSL
+        tgValue = ltp + partValueTG
+        # print("SL and TG setup after Buy")
+        # print(slValue)
+        # print(tgValue)
+        return slValue, tgValue
+    else:
+        partValueSL = (sl*ltp)/100
+        partValueTG = (tg*ltp)/100
+        slValue = ltp + partValueSL
+        tgValue = ltp - partValueTG
+        # print("SL and TG setup after sell")
+        # print(slValue)
+        # print(tgValue)
+        return slValue, tgValue
+
+def stopAll(request):
+    print("Came from JS to stop All")
+    algoArray = AlgoWatchlist.objects.all()
+    for items in algoArray:
+        AlgoWatchlist.objects.filter(instruments = items.instruments).update(startAlgo = False)
+        # AlgoWatchlist.objects.filter(instruments = items.instruments).update(qty = int(request.POST['scriptQty']))
+    return HttpResponse()
+
+def startAll(request):
+    print("Came from JS to start All")
+    algoArray = AlgoWatchlist.objects.all()
+    for items in algoArray:
+        AlgoWatchlist.objects.filter(instruments = items.instruments).update(startAlgo = True)
+        AlgoWatchlist.objects.filter(instruments = items.instruments).update(qty = int(request.POST['scriptQty']))
+    return HttpResponse()
+
 
 
 def random_with_N_digits(n):
