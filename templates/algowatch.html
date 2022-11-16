@@ -48,6 +48,7 @@ $(document).ready(function(){
                             <th scope="col">Instruments</th>
                             <th scope="col">Entry Price</th>
                             <th scope="col">LTP</th>
+                            <th scope="col">SL Hit</th>
                             <th scope="col">Qty</th>
                             <th scope="col">Scale Up</th>
                             <th scope="col">Scale Down</th>
@@ -62,16 +63,19 @@ $(document).ready(function(){
                             <td >{{instrument.entryprice}}</td>
                             {% comment %} <td>{{instrument.lastTradedPrice}}</td> {% endcomment %}
                             <td id="ltp">2</td>
+                            <td>{{instrument.slHitCount}}</td>
                             <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "{{instrument.qty}}"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
+                            {% if instrument.openPostion != False %}    
+                                {% comment %} <a href="#" class="btn btn-danger" onclick="stopAlgo('{{instrument.instruments}}')"><span> Exit & Stop Algo</span></a> {% endcomment %}
+                                <td style="color: green; font-weight:bold">Open Position</td>
+                            {% else %}
                             <td>
-                                {% if instrument.openPostion != False %}
-                                    <a href="#" class="btn btn-danger" onclick="stopAlgo('{{instrument.instruments}}')"><span> Exit & Stop Algo</span></a>
-                                {% else %}
-                                    <a href="#" class="btn btn-success" onclick="startAlgo('{{instrument.instruments}}')"><span> Start Algo</span></a>
-                                {% endif %}
+                                <a href="#" class="btn btn-success" onclick="startAlgo('{{instrument.instruments}}')"><span> Start Algo</span></a>
                             </td>
+                            {% endif %}
+                            
                             <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
                         </tr>
                         {% endfor %}
@@ -149,8 +153,44 @@ $(document).ready(function(){
             </div>
         </div>        
     </div>
+    {{apikey|json_script:"key"}}
+    {{token|json_script:"fetchToken"}}
+    {% comment %} {{allInstruments|json_script:"allInstrumentsList"}} {% endcomment %}
     </body>
     <script>
+        const keyValue = JSON.parse(document.getElementById('key').textContent);
+        const tokenValue = JSON.parse(document.getElementById('fetchToken').textContent);
+        {% comment %} const instrumentList = JSON.parse(document.getElementById('allInstrumentsList').textContent); {% endcomment %}
+        console.log(instrumentList)
+        // Websocket starts Here
+        // Javascript example.
+            // websocket scripts
+        var loc = window.location
+        var wsStart = 'ws://'
+        var endpoint = wsStart + loc.host + loc.pathname
+        var socket = new WebSocket(endpoint)
+    
+        if (loc.protocol == 'https:'){
+            wsStart = 'wss://'
+        }
+    
+        socket.onmessage = function(e){
+            console.log("message", e)
+        }
+    
+        socket.onopen = function(e){
+            wsStart.send(tokenValue)
+            console.log("message", e)
+        }
+    
+        socket.onerror = function(e){
+            console.log("message", e)
+        }
+    
+        socket.onclose = function(e){
+            console.log("message", e)
+        }
+
         function autocomplete(inp, arr) {
           /*the autocomplete function takes two arguments,
           the text field element and an array of possible autocompleted values:*/
@@ -302,6 +342,8 @@ $(document).ready(function(){
         }
 
         function startAll(){
+
+            var scriptQty1 = parseInt(document.getElementById(clicked).value);
             $.ajax({
                 type: "POST",
                 url: 'startAll',

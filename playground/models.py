@@ -11,6 +11,7 @@ class Preferences(models.Model):
     scaledownqty = models.IntegerField(default = 1, null=True)
     openingrange = models.FloatField(default = 10.0, null=True)
     openingrangebox = models.BooleanField(default=False, null=True)
+    scriptName = models.CharField(max_length = 100, default = "Default")
 
 class AlgoWatchlist(models.Model):
     instruments = models.CharField(max_length = 100)
@@ -25,7 +26,7 @@ class AlgoWatchlist(models.Model):
     exchangeType = models.CharField(max_length = 100, default = "NFO")
     segment = models.CharField(max_length = 100, default = "NFO-FUT")
     instrumentType = models.CharField(max_length = 100, default = "CE")
-    slHitCount = models.IntegerField(default = 1)
+    slHitCount = models.IntegerField(default = 0)
 
 
 class ManualWatchlist(models.Model):
@@ -44,7 +45,7 @@ class ManualWatchlist(models.Model):
     instrumentType = models.CharField(max_length = 100, default = "CE")
     isBuyClicked = models.BooleanField(default=False, null=False)
     isSellClicked = models.BooleanField(default=False, null=False)
-    slHitCount = models.IntegerField(default = 1)
+    slHitCount = models.IntegerField(default = 0)
 
 
 class Positions(models.Model):

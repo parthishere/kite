@@ -38,6 +38,7 @@ $(document).ready(function(){
                         <tr>
                             <th scope="col">Instruments</th>
                             <th scope="col">LTP</th>
+                            <th scope="col">SL Hit</th>
                             <th scope="col">Qty</th>
                             <th scope="col">Scale Up</th>
                             <th scope="col">Scale Down</th>
@@ -51,6 +52,7 @@ $(document).ready(function(){
                         <tr>
                             <td>{{instrument.instruments}}</td>
                             <td>{{instrument.lastTradedPrice}}</td>
+                            <td>{{instrument.slHitCount}}</td>
                             <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "1"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
