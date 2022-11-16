@@ -56,7 +56,7 @@ def loginUser(request):
             # print("Subscriber list")
             # print(subscriberlist)
             getPositions()
-            startLiveConnection(str(kite.access_token))
+            # startLiveConnection(str(kite.access_token))
             return render(request, 'home.html',)
         messages.error(request, 'Authentication Failed! Please login again')
 
@@ -81,7 +81,7 @@ def algowatch(request):
     positionArray = getPositions()
     totalPNL = total_pnl()
     algoWatchlistArray = AlgoWatchlist.objects.all()
-    return render(request, 'algowatch.html', {'allInstruments':allInstruments,'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL, "apikey": "vx69n80awe84d7pb", "token": kite.access_token})
+    return render(request, 'algowatch.html', {'allInstruments':allInstruments,'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL, "token": kite.access_token})
     
 def manualwatch(request):
 

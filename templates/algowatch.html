@@ -62,7 +62,7 @@ $(document).ready(function(){
                             <td>{{instrument.instruments}}</td>
                             <td >{{instrument.entryprice}}</td>
                             {% comment %} <td>{{instrument.lastTradedPrice}}</td> {% endcomment %}
-                            <td id="ltp">2</td>
+                            <td id='{{instrument.instruments}}ltp'>2</td>
                             <td>{{instrument.slHitCount}}</td>
                             <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "{{instrument.qty}}"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
@@ -153,43 +153,39 @@ $(document).ready(function(){
             </div>
         </div>        
     </div>
-    {{apikey|json_script:"key"}}
+    {% comment %} {{apikey|json_script:"key"}} {% endcomment %}
     {{token|json_script:"fetchToken"}}
     {% comment %} {{allInstruments|json_script:"allInstrumentsList"}} {% endcomment %}
     </body>
     <script>
-        const keyValue = JSON.parse(document.getElementById('key').textContent);
+        {% comment %} const keyValue = JSON.parse(document.getElementById('key').textContent); {% endcomment %}
         const tokenValue = JSON.parse(document.getElementById('fetchToken').textContent);
-        {% comment %} const instrumentList = JSON.parse(document.getElementById('allInstrumentsList').textContent); {% endcomment %}
-        console.log(instrumentList)
+        
         // Websocket starts Here
-        // Javascript example.
-            // websocket scripts
-        var loc = window.location
-        var wsStart = 'ws://'
-        var endpoint = wsStart + loc.host + loc.pathname
-        var socket = new WebSocket(endpoint)
-    
-        if (loc.protocol == 'https:'){
-            wsStart = 'wss://'
-        }
-    
-        socket.onmessage = function(e){
-            console.log("message", e)
-        }
-    
-        socket.onopen = function(e){
-            wsStart.send(tokenValue)
-            console.log("message", e)
-        }
-    
-        socket.onerror = function(e){
-            console.log("message", e)
-        }
-    
-        socket.onclose = function(e){
-            console.log("message", e)
-        }
+        var socket = new WebSocket('ws://'+ window.location.host +'/ws/stock/'+tokenValue)
+        socket.addEventListener('open',()=>{
+            console.log("Websocket Connection Open............");
+            /*let message = tokenValue;
+            socket.send(JSON.stringify({
+            'msg': message
+            }))*/
+        })
+
+        socket.addEventListener('message',(event)=>{
+            //console.log(event.data)
+            let stockPrices = JSON.parse(event.data)
+            for (stock in stockPrices){
+                let stock_ltp = document.getElementById(stock+"ltp");
+                console.log("-----------stock elemnet-------",stock_ltp);
+                let stock_ltp_price = stockPrices[stock]['LTP'];
+                console.log("__________________:",stock_ltp_price);
+                stock_ltp.innerText = stock_ltp_price;
+            }
+        })
+
+        socket.addEventListener('close', (event)=>{
+            console.log("Websocket Closed ...........", event);
+        })
 
         function autocomplete(inp, arr) {
           /*the autocomplete function takes two arguments,
@@ -294,11 +290,11 @@ $(document).ready(function(){
         autocomplete(document.getElementById("myInput"), countries);
     </script>
     <script>
-        setInterval(myTimer, 1000);
+        /*setInterval(myTimer, 1000);
         function myTimer() {
             const d = new Date();
             document.getElementById("ltp").innerHTML = d.toLocaleTimeString();
-          }
+          }*/
         
     </script>
     {% block javascript %}
