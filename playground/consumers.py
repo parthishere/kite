@@ -41,15 +41,16 @@ def on_ticks(ws, ticks):
             "Low": stock['ohlc']['low'],
             "Close": stock['ohlc']['close'],
             "LTP": stock['last_price']}
-        print("Checking live data")
-        print(liveData)
+        # coreLogic(liveData)
+        # print("Checking live data")
+        # print(liveData, "+++++============++++++")
 
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
     # ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
-    print("Starting new connection with Subscriber list")
-    print(list(subscriberlist.keys()))
+    # print("Starting new connection with Subscriber list")
+    # print(list(subscriberlist.keys()))
     ws.subscribe(list(subscriberlist.keys()))
 
     # Set RELIANCE to tick in `full` mode.
@@ -60,28 +61,25 @@ def on_close(ws, code, reason):
     # Reconnection will not happen after executing `ws.stop()`
     ws.stop()
 
+
 class MyAsyncConsumer(AsyncConsumer):
     async def websocket_connect(self, event):
         print("WEBSOCKET CONNECTED...........",event)
         await self.send({
             'type':'websocket.accept'
         })
-
-        token = self.scope['url_route']['kwargs']['token']
-        startLiveConnection(token)
-
         # print(liveData,"______________________++++++++++liev data 1")
-        counter = 0
+        # counter = 0
         while True:
-            print(liveData,"______________________++++++++++liev data 2")
+            # print(liveData,"______________________++++++++++liev data 2")
             await asyncio.sleep(1)
-            counter+=1
+            # counter+=1
             await self.send({
                 'type':'websocket.send',
                 'text': json.dumps(liveData)
             })
             # sleep(1)
-            print("counter: ", counter)
+            # print("counter: ", counter)
 
 
     async def websocket_receive(self, event):
@@ -96,3 +94,5 @@ class MyAsyncConsumer(AsyncConsumer):
     async def websocket_disconnect(self, event):
         print("WEBSOCKET DISCONNECTED////////////////////",event)
         raise StopConsumer()
+
+

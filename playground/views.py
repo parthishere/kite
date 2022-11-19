@@ -18,6 +18,8 @@ from django.db.models import Q
 from django.db.models import Sum
 import datetime, time
 from random import randint
+from time import sleep
+from .consumers import liveData, startLiveConnection
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -28,7 +30,7 @@ instrumentArray = []
 positionArray = []
 ordersArray = []
 subscriberlist = {}
-liveData = {}
+#liveData = {}
 # liveData = {'ABB': {'Open': 3103.9, 'High': 3240.0, 'Low': 3054.5, 'Close': 3103.9, 'LTP': 3166.9}, 'ITC': {'Open': 359.0, 'High': 359.9, 'Low': 354.1, 'Close': 360.7, 'LTP': 356.0}, 'BPCL': {'Open': 306.0, 'High': 307.95, 'Low': 304.2, 'Close': 306.85, 'LTP': 305.5}, 'HDFC': {'Open': 2480.2, 'High': 2508.4, 'Low': 2467.8, 'Close': 2503.5, 'LTP': 2504.1}, 'RELIANCE': {'Open': 2590.0, 'High': 2596.55, 'Low': 2563.0, 'Close': 2604.0, 'LTP': 2572.5}, 'IEX': {'Open': 142.6, 'High': 142.6, 'Low': 138.85, 'Close': 142.6, 'LTP': 140.2}}
 byPassZerodha = True
 
@@ -39,7 +41,14 @@ def index(request):
     return render(request, 'index.html')    
 
 def home(request):
-    return render(request, 'home.html')
+    indexArray = []
+    
+    # instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='NIFTY 50', exchange = 'NSE') | Q(tradingsymbol='NIFTY BANK', exchange = 'NSE')).values()
+    # for instrumentObject in instrumentUpdate:
+    #     tradingSymbol = instrumentObject.get('tradingsymbol')
+    #     indexArray.append(tradingSymbol)
+    # print(indexArray)
+    return render(request, 'home.html', {'indexlist': indexArray})
     
 def loginUser(request):
     if request.method == 'GET':
@@ -53,12 +62,17 @@ def loginUser(request):
                 if not tokens in subscriberlist:
                     # print("Adding token to subscriber list")
                     subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
-            # print("Subscriber list")
-            # print(subscriberlist)
+            print("Subscriber list")
+            print(subscriberlist)
             getPositions()
-            # startLiveConnection(str(kite.access_token))
-            return render(request, 'home.html',)
+            startLiveConnection(str(kite.access_token))
+            return render(request, 'home.html', {"token": kite.access_token})
         messages.error(request, 'Authentication Failed! Please login again')
+
+
+# while True:
+#     time.sleep(1)
+    
 
 def algowatch(request):
 
@@ -69,7 +83,6 @@ def algowatch(request):
     
     #Clear all the model data if required
     # clearAllData()
-
     #If user is loggedin using Zerodha then fetch instrument list from the Zerodha using kite api.
     # refreshIntrumentList()()
 
@@ -81,7 +94,7 @@ def algowatch(request):
     positionArray = getPositions()
     totalPNL = total_pnl()
     algoWatchlistArray = AlgoWatchlist.objects.all()
-    return render(request, 'algowatch.html', {'allInstruments':allInstruments,'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL, "token": kite.access_token})
+    return render(request, 'algowatch.html', {'allInstruments':allInstruments,'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL})
     
 def manualwatch(request):
 
@@ -298,47 +311,47 @@ def total_pnl():
     if total:
         return round(total,2)
 
-#=========================
-## Websocket Data Connection Methods
-#=========================
-def startLiveConnection(token):
-    kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
-    kws.on_ticks = on_ticks
-    kws.on_connect = on_connect
-    kws.connect(threaded=True)
+# #=========================
+# ## Websocket Data Connection Methods
+# #=========================
+# def startLiveConnection(token):
+#     kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
+#     kws.on_ticks = on_ticks
+#     kws.on_connect = on_connect
+#     kws.connect(threaded=True)
 
-def on_ticks(ws, ticks):
-    # Callback to receive ticks.
-    # logging.debug("Ticks: {}".format(ticks))
-    for stock in ticks:
-        # print(stock['instrument_token'])
-        # print(list(subscriberlist.keys()))
-        # print(subscriberlist[stock['instrument_token']])
-        liveData[subscriberlist[stock['instrument_token']]] = {"Open": stock['ohlc']['open'],
-            "Open": stock['ohlc']['open'],
-            "High": stock['ohlc']['high'],
-            "Low": stock['ohlc']['low'],
-            "Close": stock['ohlc']['close'],
-            "LTP": stock['last_price']}
-        # print("Checking live data")
-        # print(liveData)
-        coreLogic(liveData)
+# def on_ticks(ws, ticks):
+#     # Callback to receive ticks.
+#     # logging.debug("Ticks: {}".format(ticks))
+#     for stock in ticks:
+#         # print(stock['instrument_token'])
+#         # print(list(subscriberlist.keys()))
+#         # print(subscriberlist[stock['instrument_token']])
+#         liveData[subscriberlist[stock['instrument_token']]] = {"Open": stock['ohlc']['open'],
+#             "Open": stock['ohlc']['open'],
+#             "High": stock['ohlc']['high'],
+#             "Low": stock['ohlc']['low'],
+#             "Close": stock['ohlc']['close'],
+#             "LTP": stock['last_price']}
+#         print("Checking live data")
+#         print(liveData)
+#         coreLogic(liveData)
 
-def on_connect(ws, response):
-    # Callback on successful connect.
-    # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
-    # ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
-    print("Starting new connection with Subscriber list")
-    print(list(subscriberlist.keys()))
-    ws.subscribe(list(subscriberlist.keys()))
+# def on_connect(ws, response):
+#     # Callback on successful connect.
+#     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
+#     # ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
+#     print("Starting new connection with Subscriber list")
+#     print(list(subscriberlist.keys()))
+#     ws.subscribe(list(subscriberlist.keys()))
 
-    # Set RELIANCE to tick in `full` mode.
-    ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
+#     # Set RELIANCE to tick in `full` mode.
+#     ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
 
-def on_close(ws, code, reason):
-    # On connection close stop the main loop
-    # Reconnection will not happen after executing `ws.stop()`
-    ws.stop()
+# def on_close(ws, code, reason):
+#     # On connection close stop the main loop
+#     # Reconnection will not happen after executing `ws.stop()`
+#     ws.stop()
 
 # kws.on_close = on_close
 
@@ -346,13 +359,19 @@ def on_close(ws, code, reason):
 ## Algo Core Logic Method
 #=========================
 #Steps for the logic
+
+
 def coreLogic(liveData): #A methond to check 
-    # print("")
+    # print(liveData,"++++++++++++++++++++++++coming from corelogic consumers")
     watchForAlgowatchlistBuySellLogic(liveData)
-    # watchForManualListBuySellLogic(liveData)
+    watchForManualListBuySellLogic(liveData)
 
 def watchForAlgowatchlistBuySellLogic(liveData):
+
+    # print(liveData,"++++++++++++++++++++++++coming from watchforalgo consumers testing again")
     algoArray = AlgoWatchlist.objects.all()
+    print(algoArray, "++++++++++++++++Algo Array Values=============")
+
     #Get value from Settings
     settings = Preferences.objects.all()
     #TG : Get % value from settings
@@ -365,9 +384,11 @@ def watchForAlgowatchlistBuySellLogic(liveData):
     ordp = settings.values()[0]['openingrange']
     #ORD :  Get true of fale from Settings to apply ORD or not
     ordtick = settings.values()[0]['openingrangebox']
-
     # 1. Run a loog for all watchlist items 
     for items in algoArray: #Reliance
+
+        print(items.instruments,"++++++++++++++++++++++++coming from watchforalgo consumers")
+        print(liveData,"++++++++++++++++++++++++coming from watchforalgo consumers")
         if items.instruments in liveData:
             liveValues = liveData[items.instruments]
             #UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
@@ -427,13 +448,15 @@ def watchForAlgowatchlistBuySellLogic(liveData):
                             tradeInitiateWithSLTG(type="SELL", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
                     if potionObject['positionType'] == "SELL":
                             tradeInitiateWithSLTG(type="BUY", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
-            # else:
-            #     print("Nothing to trade from Algo Watchlist for " + items.instruments) 
+            else:
+                print("Nothing to trade from Algo Watchlist for " + items.instruments) 
         else:
             print("Key not exist in live data")        
     # print("No script found to trade")
 
 def watchForManualListBuySellLogic(liveData):
+
+    # print(liveData,"++++++++++++++++++++++++coming from watchformanual consumers")
     manualArray = ManualWatchlist.objects.all()
     settings = Preferences.objects.all()
     #TG : Get % value from settings
@@ -459,7 +482,7 @@ def watchForManualListBuySellLogic(liveData):
                     print("Nothing to trade from Manual Watchlist")
             elif items.startAlgo and items.openPostion:
 
-                print("Algo is running and postion is also running so checking for SL or TG")
+                print("Algo is running and postion is also running so checking for SL or TG +++++++++++++++++++++++======__________________________________")
                 postions = Positions.objects.filter(instruments=items.instruments)
                 if postions:
                     potionObject = postions.values()[0]
@@ -502,8 +525,6 @@ def watchForManualListBuySellLogic(liveData):
         else:
             print("Key not existing in live data, Wating for live data")
         
-
-
 #=========================
 ## Algo Commonn Methods
 #=========================
@@ -525,7 +546,8 @@ def sellSingle(request): #For Manual watchlist
     return HttpResponse(request.POST['text'])
 
 def startSingle(request): #For Manual watchlist
-    print("Came from JS to start" + request.POST['scriptQty'])
+    # print(liveData,"++++++++++++++++++++++++coming from consumers")
+    print("Came from JS to start" + request.POST['script'],)
     AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     return HttpResponse(request.POST['script'])
@@ -566,7 +588,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
             orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
                     tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
                     product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
-            print("Order places successfully")
+            print("Order places successfully=================")
             if isFromAlgo:
                 AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = True)
             else:
@@ -576,6 +598,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
             getPositionAndUpdateModels(ltp,scriptCode, orderId, type)
         else:
 
+            print("Order not places successfully=============================")
             orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
                     tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
                     product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)

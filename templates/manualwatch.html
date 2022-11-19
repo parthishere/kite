@@ -51,7 +51,7 @@ $(document).ready(function(){
                         {% for instrument in manualWatchlistArray %}
                         <tr>
                             <td>{{instrument.instruments}}</td>
-                            <td>{{instrument.lastTradedPrice}}</td>
+                            <td id='{{instrument.instruments}}ltp'>2</td>
                             <td>{{instrument.slHitCount}}</td>
                             <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "1"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
@@ -149,7 +149,9 @@ $(document).ready(function(){
             </div>
         </div>        
     </div>
+    {% comment %} {{token|json_script:"fetchToken"}} {% endcomment %}
     </body>
+    <script src="{% static 'js/SocketData.js' %}"></script>
     <script type="text/javascript">
         function ScaleUpQty(clicked){
             var qty = document.getElementById(clicked).value;
@@ -162,8 +164,7 @@ $(document).ready(function(){
             if (qty > 1) {
                 var multipleQty = parseInt(qty/2);
                 document.getElementById(clicked).value = multipleQty;
-            }
-            
+            }            
         }
 
         function BuyOrder(clicked){

@@ -154,15 +154,16 @@ $(document).ready(function(){
         </div>        
     </div>
     {% comment %} {{apikey|json_script:"key"}} {% endcomment %}
-    {{token|json_script:"fetchToken"}}
+    {% comment %} {{token|json_script:"fetchToken"}} {% endcomment %}
     {% comment %} {{allInstruments|json_script:"allInstrumentsList"}} {% endcomment %}
     </body>
+    <script src="{% static 'js/SocketData.js' %}"></script>
     <script>
         {% comment %} const keyValue = JSON.parse(document.getElementById('key').textContent); {% endcomment %}
-        const tokenValue = JSON.parse(document.getElementById('fetchToken').textContent);
+        {% comment %} const tokenValue = JSON.parse(document.getElementById('fetchToken').textContent); {% endcomment %}
         
         // Websocket starts Here
-        var socket = new WebSocket('ws://'+ window.location.host +'/ws/stock/'+tokenValue)
+        {% comment %} var socket = new WebSocket('ws://'+ window.location.host +'/ws/stock/'+tokenValue)
         socket.addEventListener('open',()=>{
             console.log("Websocket Connection Open............");
             /*let message = tokenValue;
@@ -185,7 +186,9 @@ $(document).ready(function(){
 
         socket.addEventListener('close', (event)=>{
             console.log("Websocket Closed ...........", event);
-        })
+        }) {% endcomment %}
+
+        console.log("HELLO WORLD===========================")
 
         function autocomplete(inp, arr) {
           /*the autocomplete function takes two arguments,
@@ -314,6 +317,7 @@ $(document).ready(function(){
         }
 
         function startAlgo(clicked){
+
             var scriptQty1 = parseInt(document.getElementById(clicked).value);
             $.ajax({
                 type: "POST",
@@ -321,6 +325,7 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1 },
                 success: function callback(response){
                             console.log(response);
+                            window.location.reload();
                          }
              });
         }
