@@ -21,6 +21,23 @@ $(document).ready(function(){
 </script>
 {% endblock head %}
 {% block title %} Manual Watchlist {% endblock title %}
+{% block NavbarComp %}
+<li class="nav-item">
+  <a class="nav-link" href="/home">Home</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/algowatch">Algowatch</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link active" href="/manualwatch">Manualwatch</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/orders">Orders</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/settings">Settings</a>
+</li>
+{% endblock NavbarComp %}
 {% block body %} 
 <body>
     <div class="container-fluid">
@@ -30,6 +47,11 @@ $(document).ready(function(){
                     <div class="row">
                         <div class="col-sm-6">
                             <h2>Watchlist <b>for Manual Action</b></h2>
+                        </div>
+                        <div class="col-sm-6 autocomplete"><span class="float-right">
+                            <form autocomplete="off" action="/action_page.php">
+                                <input id="myInput" class="ManualWatch"  name="myCountry" type="text"  placeholder="Search Script">
+                              </form>			
                         </div>
                     </div>
                 </div>
@@ -47,9 +69,9 @@ $(document).ready(function(){
                             <th scope="col">Delete</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="instrumentDiv">
                         {% for instrument in manualWatchlistArray %}
-                        <tr>
+                        <tr id="{{instrument.instruments}}_main">
                             <td>{{instrument.instruments}}</td>
                             <td id='{{instrument.instruments}}ltp'>2</td>
                             <td>{{instrument.slHitCount}}</td>
@@ -72,7 +94,7 @@ $(document).ready(function(){
                                 <td><a href="#" class="btn btn-success" title="Click to buy" onclick="BuyOrder('{{instrument.instruments}}')"><span> Buy</span></a></td>
                                 <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('{{instrument.instruments}}')"><span> Sell</span></a></td>
                             {% endif %} 
-                            <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                            <td><a href="#" class="delete" onclick="deleteInstrument('{{instrument.instruments}}')"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -149,9 +171,10 @@ $(document).ready(function(){
             </div>
         </div>        
     </div>
-    {% comment %} {{token|json_script:"fetchToken"}} {% endcomment %}
+    {{allInstruments|json_script:"allInstrumentsList"}}
     </body>
     <script src="{% static 'js/SocketData.js' %}"></script>
+    <script src="{% static 'js/Instruments.js' %}"></script>
     <script type="text/javascript">
         function ScaleUpQty(clicked){
             var qty = document.getElementById(clicked).value;

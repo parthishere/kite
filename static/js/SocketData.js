@@ -20,9 +20,7 @@ socket.addEventListener('message',(event)=>{
         if (stock_ltp == null){
             continue
         }  
-        console.log("-----------stock elemnet-------",stock_ltp);
         let stock_ltp_price = stockPrices[stock]['LTP'];
-        console.log("__________________:",stock_ltp_price);
         stock_ltp.innerText = stock_ltp_price;
     }
 })

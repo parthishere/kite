@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block head %}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -40,6 +39,23 @@ $(document).ready(function(){
 </script>
 {% endblock head %}
 {% block title %} Settings {% endblock title %}
+{% block NavbarComp %}
+<li class="nav-item">
+  <a class="nav-link" href="/home">Home</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/algowatch">Algowatch</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/manualwatch">Manualwatch</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/orders">Orders</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link active" href="/settings">Settings</a>
+</li>
+{% endblock NavbarComp %}
 {% block body %}
 <div class="container-fluid px-3 mb-3">
     <h3 class="text-left">  </h3>

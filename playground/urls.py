@@ -19,4 +19,10 @@ urlpatterns = [
     path("stopAll", views.stopAll),
     path("buySingle", views.buySingle),
     path("sellSingle", views.sellSingle),
+
+    path("scaleUpQty", views.scaleUpQty),
+    path("scaleDownQty", views.scaleDownQty),
+
+    path("addInstrument", views.addInstrument),
+    path("deleteInstrument", views.deleteInstrument),
 ]

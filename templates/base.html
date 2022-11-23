@@ -16,21 +16,7 @@
           </button>
           <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <a class="nav-link active" href="/home">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" href="/algowatch">Algowatch</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/manualwatch">Manualwatch</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/orders">Orders</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/settings">Settings</a>
-              </li>
+              {% block NavbarComp %}{% endblock NavbarComp %}
             </ul>
             <form class="d-flex" action = '/logout'>
               {% comment %} <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"> {% endcomment %}
@@ -50,10 +36,6 @@
       
     {% block body %}{% endblock body %}
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
-      <script $( '.navbar-nav nav-link a' ).on( 'click', function () {
-        $( '.navbar-nav nav-link' ).find( 'li.active' ).removeClass( 'active' );
-        $( this ).parent( 'li' ).addClass( 'active' );
-      });
     </script>
   </body>
 </html>

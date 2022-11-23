@@ -15,6 +15,23 @@
 
 {% endblock head %}
 {% block title %} Home {% endblock title %}
+{% block NavbarComp %}
+<li class="nav-item">
+  <a class="nav-link active" href="/home">Home</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/algowatch">Algowatch</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/manualwatch">Manualwatch</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/orders">Orders</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/settings">Settings</a>
+</li>
+{% endblock NavbarComp %}
 {% block body %} 
 <body>
     <!-- TradingView Widget BEGIN -->
