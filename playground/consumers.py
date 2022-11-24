@@ -11,18 +11,22 @@ from django.db.models import Q
 #=========================
 ## Websocket Data Connection Methods
 #=========================
-subscriberlist = {}
+subscriberlist = {256265: "NIFTY 50"}
 liveData = {}
+# instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
+# for instrumentObject in instrumentUpdate:
+#     tokens = instrumentObject.get('instrument_token')
+#     if not tokens in subscriberlist:
+#         # print("Adding token to subscriber list")
+#         subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
 
-instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
-for instrumentObject in instrumentUpdate:
-    tokens = instrumentObject.get('instrument_token')
-    if not tokens in subscriberlist:
-        # print("Adding token to subscriber list")
-        subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
-
+def updateSubscriberList(token, tradingSymbol, isSubscribe):
+    if isSubscribe:
+        subscriberlist[int(token)] = tradingSymbol
+    else: 
+        subscriberlist.pop(int(token))
+    
 def startLiveConnection(token):
-
     kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
     kws.on_ticks = on_ticks
     kws.on_connect = on_connect
@@ -31,6 +35,7 @@ def startLiveConnection(token):
 def on_ticks(ws, ticks):
     # Callback to receive ticks.
     # logging.debug("Ticks: {}".format(ticks))
+    subscriptionStatus(ws)
     for stock in ticks:
         # print(stock['instrument_token'])
         # print(list(subscriberlist.keys()))
@@ -45,6 +50,12 @@ def on_ticks(ws, ticks):
         # print("Checking live data")
         # print(liveData, "+++++============++++++")
 
+def subscriptionStatus(ws):
+
+    # print(subscriberlist, "Subscription Status ====================")
+    ws.subscribe(list(subscriberlist.keys()))
+    ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
+
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
@@ -52,7 +63,6 @@ def on_connect(ws, response):
     # print("Starting new connection with Subscriber list")
     # print(list(subscriberlist.keys()))
     ws.subscribe(list(subscriberlist.keys()))
-
     # Set RELIANCE to tick in `full` mode.
     ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
 
@@ -78,6 +88,7 @@ class MyAsyncConsumer(AsyncConsumer):
                 'type':'websocket.send',
                 'text': json.dumps(liveData)
             })
+            # print(subscriberlist, "++++++++Subscriber list++++++++++")
             # sleep(1)
             # print("counter: ", counter)
 

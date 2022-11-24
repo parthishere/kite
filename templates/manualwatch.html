@@ -180,14 +180,33 @@ $(document).ready(function(){
             var qty = document.getElementById(clicked).value;
             var multipleQty = qty*2;
             document.getElementById(clicked).value = multipleQty;
+            $.ajax({
+                type: "POST",
+                url: 'scaleUpQty',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "false" },
+                success: function callback(response){
+                            console.log(response);
+                            window.location.reload();
+                         }
+             });
         }
 
         function ScaleDownQty(clicked){
             let qty = document.getElementById(clicked).value;
+            var multipleQty = 0
             if (qty > 1) {
-                var multipleQty = parseInt(qty/2);
+                multipleQty = parseInt(qty/2);
                 document.getElementById(clicked).value = multipleQty;
-            }            
+            }   
+            $.ajax({
+                type: "POST",
+                url: 'scaleDownQty',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "false" },
+                success: function callback(response){
+                            console.log(response);
+                            window.location.reload();
+                         }
+             });         
         }
 
         function BuyOrder(clicked){
@@ -198,6 +217,7 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: buyScriptQty },
                 success: function callback(response){
                             console.log(response);
+                            window.location.reload();
                          }
              });   
         }
@@ -210,6 +230,7 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: sellScriptQty },
                 success: function callback(response){
                             console.log(response);
+                            window.location.reload();
                          }
              });
         }
@@ -223,6 +244,7 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1, isFromAlgoTest: "false" },
                 success: function callback(response){
                             console.log(response);
+                            window.location.reload();
                          }
              });
         }

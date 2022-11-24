@@ -32,45 +32,128 @@ function autocomplete(inp, arr) {
                 let watchFlag = searchElement.className;
                 /*insert the value for the autocomplete text field:*/
                 inp.value = this.getElementsByTagName("input")[0].value;
-                $.ajax({
-                  type: "POST",
-                  url: 'addInstrument',
-                  data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: inp.value, flag:watchFlag},
-                  success: function (response){
-                              console.log((response.instrument)[0],"__________________+++++++---------------=++++++++");
-                              let instrument = (response.instrument)[0];
-                              let row = ``;
-                              if (instrument.openPostion != false){                                        
-                                  row = `<tr ${instrument.instruments}_main>
-                                      <td>${instrument.instruments}</td>
-                                      <td >${instrument.entryprice}</td>
-                                      <td id='${instrument.instruments}ltp'>2</td>
-                                      <td>${instrument.slHitCount}</td>
-                                      <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
-                                      <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
-                                      <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
-                                      <td style="color: green; font-weight:bold">Open Position</td>
-                                      <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
-                                  </tr>`
-                              }else{
-                                  row = `<tr ${instrument.instruments}_main>
-                                      <td>${instrument.instruments}</td>
-                                      <td >${instrument.entryprice}</td>
-                                      <td id='${instrument.instruments}ltp'>2</td>
-                                      <td>${instrument.slHitCount}</td>
-                                      <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
-                                      <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
-                                      <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
-                                      <td><a href="#" class="btn btn-success" onclick="startAlgo('${instrument.instruments}')"><span> Start Algo</span></a></td>
-                                      <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
-                                  </tr>`
-                              }
+                if (watchFlag == "AlgoWatch") {
+                  $.ajax({
+                    type: "POST",
+                    url: 'addInstrument',
+                    data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: inp.value, flag:watchFlag},
+                    success: function (response){
+                                console.log((response.instrument)[0],"____________________hello world");
+                                let instrument = (response.instrument)[0];
+//                                 socket.send(JSON.stringify({
+//                                   'msg':instrument.instruments,
+// //                                  'instrument_token': instrument.instrumentsToken
+//                                 }));
+                                let row = ``;
+                                if (instrument.openPostion != false){                                        
+                                    row = `<tr ${instrument.instruments}_main>
+                                        <td>${instrument.instruments}</td>
+                                        <td >${instrument.entryprice}</td>
+                                        <td id='${instrument.instruments}ltp'>2</td>
+                                        <td>${instrument.slHitCount}</td>
+                                        <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                                        <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                                        <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                                        <td style="color: green; font-weight:bold">Open Position</td>
+                                        <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                                    </tr>`
+                                }else{
+                                    row = `<tr ${instrument.instruments}_main>
+                                        <td>${instrument.instruments}</td>
+                                        <td >${instrument.entryprice}</td>
+                                        <td id='${instrument.instruments}ltp'>2</td>
+                                        <td>${instrument.slHitCount}</td>
+                                        <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                                        <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                                        <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                                        <td><a href="#" class="btn btn-success" onclick="startAlgo('${instrument.instruments}')"><span> Start Algo</span></a></td>
+                                        <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                                    </tr>`
+                                }
+  
+                                let instrumentDivData = document.getElementById('instrumentDiv').innerHTML + row;
+                                document.getElementById('instrumentDiv').innerHTML = instrumentDivData
+                                //instrumentDiv.innerHtml += 
 
-                              let instrumentDivData = document.getElementById('instrumentDiv').innerHTML + row;
-                              document.getElementById('instrumentDiv').innerHTML = instrumentDivData
-                              //instrumentDiv.innerHtml += 
-                           }
-               });
+                                
+
+                             }
+                 });
+                }
+                else if (watchFlag == "ManualWatch") {
+                  $.ajax({
+                    type: "POST",
+                    url: 'addInstrument',
+                    data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: inp.value, flag:watchFlag},
+                    success: function (response){
+                                console.log((response.instrument)[0],"__________________+++++++---------------=++++++++");
+                                let instrument = (response.instrument)[0];
+                                let row = ``;
+                                if (instrument.openPostion != false){    
+                                    if (instrument.positionType == "BUY") {
+                                        row = `<tr ${instrument.instruments}_main>
+                                        <td>${instrument.instruments}</td>
+                                        <td id='${instrument.instruments}ltp'>2</td>
+                                        <td>${instrument.slHitCount}</td>
+                                        <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                                        <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                                        <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                                        <td style="color: green; font-weight:bold">Open Position</td>
+                                        <td style="color: green; font-weight:bold">-</td>
+                                        <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('${instrument.instruments}')"><span> Sell</span></a></td>
+                                        <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                                      </tr>`
+                                    } else if (instrument.positionType == "SELL"){
+                                        row = `<tr ${instrument.instruments}_main>
+                                          <td>${instrument.instruments}</td>
+                                          <td id='${instrument.instruments}ltp'>2</td>
+                                          <td>${instrument.slHitCount}</td>
+                                          <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                                          <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                                          <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                                          <td style="color: green; font-weight:bold">-</td>
+                                          <td style="color: green; font-weight:bold">Open Position</td>
+                                          <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('${instrument.instruments}')"><span> Sell</span></a></td>
+                                          <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                                      </tr>`
+                                    }
+                                    else{
+                                      row = `<tr ${instrument.instruments}_main>
+                                          <td>${instrument.instruments}</td>
+                                          <td id='${instrument.instruments}ltp'>2</td>
+                                          <td>${instrument.slHitCount}</td>
+                                          <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                                          <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                                          <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                                          <td style="color: green; font-weight:bold">-</td>
+                                          <td style="color: green; font-weight:bold">-</td>
+                                          <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('${instrument.instruments}')"><span> Sell</span></a></td>
+                                          <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                                      </tr>`
+                                    }
+
+                                    
+                                }else{
+                                    row = `<tr ${instrument.instruments}_main>
+                                        <td>${instrument.instruments}</td>
+                                        <td id='${instrument.instruments}ltp'>2</td>
+                                        <td>${instrument.slHitCount}</td>
+                                        <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                                        <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                                        <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                                        <td><a href="#" class="btn btn-success" title="Click to buy" onclick="BuyOrder('${instrument.instruments}')"><span> Buy</span></a></td>
+                                        <td><a href="#" class="btn btn-danger" title="Click to Sell" onclick="SellOrder('${instrument.instruments}')"><span> Sell</span></a></td>
+                                        <td><a href="#" class="delete"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
+                                    </tr>`
+                                }
+  
+                                let instrumentDivData = document.getElementById('instrumentDiv').innerHTML + row;
+                                document.getElementById('instrumentDiv').innerHTML = instrumentDivData
+                                //instrumentDiv.innerHtml += 
+                             }
+                 });
+                }
+                
                 /*close the list of autocompleted values,
                 (or any other open lists of autocompleted values:*/
                 closeAllLists();
