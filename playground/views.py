@@ -51,14 +51,6 @@ def loginUser(request):
             data = kite.generate_session(request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
             kite.set_access_token(data["access_token"])
             # clearAllData()
-            instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
-            for instrumentObject in instrumentUpdate:
-                tokens = instrumentObject.get('instrument_token')
-                if not tokens in subscriberlist:
-                    # print("Adding token to subscriber list")
-                    subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
-            # print("Subscriber list")
-            # print(subscriberlist)
             getPositions()
             startLiveConnection(str(kite.access_token))
             coreLogic()
@@ -74,7 +66,7 @@ def algowatch(request):
     positionArray = getPositions()
     totalPNL = total_pnl()
     algoWatchlistArray = AlgoWatchlist.objects.all()
-    # updateSubscriberList(algoWatchlistArray)
+    updateSavedSubscriberList(algoWatchlistArray.values())
     allInstruments = list(Instruments.objects.all().values_list('tradingsymbol', flat=True))
     return render(request, 'algowatch.html', {'allInstruments':allInstruments,'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL})
     
@@ -82,21 +74,17 @@ def manualwatch(request):
 
     if kite.access_token is None and byPassZerodha:
         return redirect("/")
-    print("----------------------------------- Manual watch")
     positionArray = getPositions()
     totalPNL = total_pnl()
     manualWatchlistArray = ManualWatchlist.objects.all()
-    # updateSubscriberList(manualWatchlistArray)
+    updateSavedSubscriberList(manualWatchlistArray.values())
     allInstruments = list(Instruments.objects.all().values_list('tradingsymbol', flat=True))
     return render(request, 'manualwatch.html', {'allInstruments':allInstruments,'manualWatchlistArray': manualWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL})
 
-# def updateSubscriberList():
-#     print("asdfsadf")
-    # for instrumentObject in instrumentUpdate:
-    #     tokens = instrumentObject.get('instrument_token')
-    #     if not tokens in subscriberlist:
-    #         # print("Adding token to subscriber list")
-    #         subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
+def updateSavedSubscriberList(instrumentArray):
+    for instrumentObject in instrumentArray:
+        tokens = instrumentObject.get('instrumentsToken')          
+        updateSubscriberList(int(tokens),instrumentObject.get('instruments'), True)
 
 def orders(request):
 
@@ -313,6 +301,7 @@ def coreLogic(): #A methond to check
     threading.Timer(1.0, coreLogic).start()
     watchForAlgowatchlistBuySellLogic()
     watchForManualListBuySellLogic()
+    getPositions()
 
 def watchForAlgowatchlistBuySellLogic():
 
@@ -480,7 +469,7 @@ def watchForManualListBuySellLogic():
                                 finalQty = (potionObject['qty'])*2
                             tradeInitiateWithSLTG(type="BUY", scriptQty=finalQty, exchangeType=items.exchangeType,sl=sl, tg=tg,orderId="", ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, isCloseTrade=False)
                             slCount = items.slHitCount + 1
-                            ManualWatchlist.objects.filter(instruments = items.instruments).update(slCount)
+                            ManualWatchlist.objects.filter(instruments = items.instruments).update(slHitCount=slCount)
                         elif liveValues['LTP'] <= potionObject['tgPrice']: #IF CMP <= TG
                             print("Target achived so Close Postions and stop algo")
                             tradeInitiateWithSLTG(type="BUY", scriptQty=potionObject['qty'], exchangeType=items.exchangeType, sl=sl, tg=tg, ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=False, orderId=potionObject['orderId'], isCloseTrade=True)
@@ -568,8 +557,7 @@ def buySingle(request): #For Manual watchlist
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isBuyClicked = True)
-    return render(request, 'algowatch.html')
-    # return HttpResponse(request.POST['script'])
+    return redirect(request.META['HTTP_REFERER'])
 
 def sellSingle(request): #For Manual watchlist
     print("Came from JS to sell single" + request.POST['script'])
@@ -577,14 +565,14 @@ def sellSingle(request): #For Manual watchlist
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isSellClicked = True)
-    return HttpResponse(request.POST['text'])
+    return redirect(request.META['HTTP_REFERER'])
 
 def startSingle(request): #For Manual watchlist
     # print(liveData,"++++++++++++++++++++++++coming from consumers")
     print("Came from JS to start" + request.POST['script'],)
     AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
-    return HttpResponse(request.POST['script'])
+    return redirect(request.META['HTTP_REFERER'])
     
 def stopSingle(request): #For Manual and Algo watchlist
     print("Came from JS to stop" + request.POST['script'])
@@ -597,7 +585,7 @@ def stopSingle(request): #For Manual and Algo watchlist
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = False)
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isSellClicked = False)
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isBuyClicked = False)
-    return HttpResponse(request.POST['script'])
+    return redirect(request.META['HTTP_REFERER'])
 
 def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg, isFromAlgo, orderId, isCloseTrade):
     #type should be "BUY" or "SELL"
@@ -703,7 +691,7 @@ def stopAll(request):
     for items in algoArray:
         AlgoWatchlist.objects.filter(instruments = items.instruments).update(startAlgo = False)
         # AlgoWatchlist.objects.filter(instruments = items.instruments).update(qty = int(request.POST['scriptQty']))
-    return HttpResponse()
+    return redirect(request.META['HTTP_REFERER'])
 
 def startAll(request):
     print("Came from JS to start All")
@@ -713,7 +701,7 @@ def startAll(request):
         print("Starting for all items: ", items.instruments)
         AlgoWatchlist.objects.filter(instruments = items.instruments).update(startAlgo = True)
         AlgoWatchlist.objects.filter(instruments = items.instruments).update(qty = int(request.POST['scriptQty']))
-    return HttpResponse()
+    return redirect(request.META['HTTP_REFERER'])
 
 def random_with_N_digits(n):
     range_start = 10**(n-1)

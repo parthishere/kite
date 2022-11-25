@@ -24,7 +24,8 @@ def updateSubscriberList(token, tradingSymbol, isSubscribe):
     if isSubscribe:
         subscriberlist[int(token)] = tradingSymbol
     else: 
-        subscriberlist.pop(int(token))
+        if len(subscriberlist) > 0:
+            subscriberlist.pop(int(token))
     
 def startLiveConnection(token):
     kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)

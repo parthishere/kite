@@ -186,7 +186,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "false" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
@@ -204,7 +203,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "false" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });         
         }
@@ -217,7 +215,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: buyScriptQty },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });   
         }
@@ -230,7 +227,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: sellScriptQty },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
@@ -244,7 +240,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1, isFromAlgoTest: "false" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }

@@ -190,7 +190,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "true" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
@@ -207,7 +206,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "true" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
@@ -221,8 +219,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1 },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
-                            window.location.reload();
                          }
              });
         }
@@ -235,7 +231,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1, isFromAlgoTest: "true" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
@@ -248,7 +243,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', text: "StartAll" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
@@ -260,7 +254,6 @@ $(document).ready(function(){
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', text: "StopAll" },
                 success: function callback(response){
                             console.log(response);
-                            window.location.reload();
                          }
              });
         }
