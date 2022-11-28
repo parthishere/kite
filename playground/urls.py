@@ -3,7 +3,7 @@ from . import views
 
 #URLConf
 urlpatterns = [
-    path("", views.index, name="Home"),
+    path("", views.index, name="HomeIndex"),
     path("login", views.loginUser,name="Login"),
     path("home", views.home,name="Home"),
     path("algowatch", views.algowatch,name="Algowatch"),

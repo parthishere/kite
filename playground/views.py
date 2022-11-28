@@ -9,7 +9,7 @@ from urllib import response
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from playground import kiteconnect, constants
-from playground.models import Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
+from playground.models import DateTimeCheck, Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
 from django.contrib import messages
 from kiteconnect import KiteConnect, KiteTicker
 from django.contrib.auth import logout, login, authenticate
@@ -20,9 +20,10 @@ from django.db.models import Sum
 import datetime, time
 from random import randint
 from time import sleep
-from .consumers import liveData, startLiveConnection, updateSubscriberList
+from .consumers import liveData, startLiveConnection, updateSubscriberList, updatePostions
 from django.http import JsonResponse
-
+from datetime import datetime, date, timedelta, time
+from time import gmtime, strftime
 # logging.basicConfig(level=logging.DEBUG)
 
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
@@ -32,37 +33,61 @@ instrumentArray = []
 positionArray = []
 ordersArray = []
 subscriberlist = {}
+timeToStart = 0.0
 #liveData = {}
 # liveData = {'ABB': {'Open': 3103.9, 'High': 3240.0, 'Low': 3054.5, 'Close': 3103.9, 'LTP': 3166.9}, 'ITC': {'Open': 359.0, 'High': 359.9, 'Low': 354.1, 'Close': 360.7, 'LTP': 356.0}, 'BPCL': {'Open': 306.0, 'High': 307.95, 'Low': 304.2, 'Close': 306.85, 'LTP': 305.5}, 'HDFC': {'Open': 2480.2, 'High': 2508.4, 'Low': 2467.8, 'Close': 2503.5, 'LTP': 2504.1}, 'RELIANCE': {'Open': 2590.0, 'High': 2596.55, 'Low': 2563.0, 'Close': 2604.0, 'LTP': 2572.5}, 'IEX': {'Open': 142.6, 'High': 142.6, 'Low': 138.85, 'Close': 142.6, 'LTP': 140.2}}
 byPassZerodha = True
+isIntrumentDownloaded = True
+
 
 #=========================
 ## All Views Functions
 #=========================
+
 def index(request):
     return render(request, 'index.html')    
 
 def home(request):
-    return render(request, 'home.html')
+    if kite.access_token is None:
+        messages.error(request, 'Authentication Failed! Please login again home =======')
+        return redirect("/")
+    TimeObjData = DateTimeCheck.objects.all()
+    if TimeObjData.exists():
+        TimeObj = TimeObjData.first()
+        todayDate = (datetime.now() + timedelta(hours=5, minutes=30)).date()
+        if TimeObj.dateCheck != todayDate:
+            TimeObjData.update(dateCheck = todayDate)
+            fetchInstrumentInBackground()
+    return render(request, 'home.html')    
     
 def loginUser(request):
     if request.method == 'GET':
         if request.GET['request_token'] != "":
             data = kite.generate_session(request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
             kite.set_access_token(data["access_token"])
-            # clearAllData()
-            getPositions()
+            if not isIntrumentDownloaded:
+                clearAllData()
+                fetchInstrumentInBackground()
+            
+            #Get value from Settings
+            settings = Preferences.objects.all()
+            #TIME : Get seconds value from settings
+            startTime = settings.values()[0]['time']
+            dt = time(9,15,00)
+            timeToStart = datetime.combine(date.today(), dt) + timedelta(seconds=float(startTime))
+            print("====================",timeToStart)
             startLiveConnection(str(kite.access_token))
             coreLogic()
-            return render(request, 'home.html', {"token": kite.access_token})
+            return redirect('Home')
         # messages.error(request, 'Authentication Failed! Please login again')
 
 def algowatch(request):
 
     #Return to home page is user is not loggedin using Zerodha
-    if kite.access_token is None and byPassZerodha:
-        messages.error(request, 'Authentication Failed! Please login again')
+    if kite.access_token is None:
+        messages.error(request, 'Authentication Failed! Please login again +++++++++')
         return redirect("/")
+
     positionArray = getPositions()
     totalPNL = total_pnl()
     algoWatchlistArray = AlgoWatchlist.objects.all()
@@ -75,8 +100,10 @@ def manualwatch(request):
     if kite.access_token is None and byPassZerodha:
         return redirect("/")
     positionArray = getPositions()
+
     totalPNL = total_pnl()
     manualWatchlistArray = ManualWatchlist.objects.all()
+    # sampleManual = ManualWatchlist.objects.all().values()
     updateSavedSubscriberList(manualWatchlistArray.values())
     allInstruments = list(Instruments.objects.all().values_list('tradingsymbol', flat=True))
     return render(request, 'manualwatch.html', {'allInstruments':allInstruments,'manualWatchlistArray': manualWatchlistArray, 'positionArray': positionArray, 'totalPNL' : totalPNL})
@@ -129,14 +156,20 @@ def logoutUser(request):
 ## All Supported Functions
 #=========================
 def clearAllData():
+    print("Cleaning old data and updating instrument list")
     # Instruments.objects.all().delete()
-    AlgoWatchlist.objects.all().delete()
-    ManualWatchlist.objects.all().delete()
+    # AlgoWatchlist.objects.all().delete()
+    # ManualWatchlist.objects.all().delete()
     Positions.objects.all().delete()
     Orders.objects.all().delete()
 
 #Refresh this instrument only once in a day at 8:30AM first login.
 #Update trading symbol if it is already exist in the database and insert it if it is not available
+def fetchInstrumentInBackground():
+    # do some stuff
+    download_thread = threading.Thread(target=refreshIntrumentList, name="Downloader")
+    download_thread.start()
+
 def refreshIntrumentList():
     instrumentList = kite.instruments(exchange='NSE')
     for item in instrumentList:
@@ -155,8 +188,8 @@ def refreshIntrumentList():
         exchange = item["exchange"]
 
         if instrument_exists(tradingsymbol):
-            # print(item)
-            # print("Updating instruments")
+            print(item)
+            print("Updating instruments")
             instrumentUpdate = Instruments.objects.get(tradingsymbol=tradingsymbol)
             instrumentUpdate.instrument_token = instrument_token
             instrumentUpdate.exchange_token = exchange_token
@@ -171,8 +204,8 @@ def refreshIntrumentList():
             instrumentUpdate.exchange = exchange
             instrumentUpdate.save()
         else:
-            # print(item)
-            # print("Adding instruments")
+            print(item)
+            print("Adding instruments")
             instrumentModel = Instruments(instrument_token=instrument_token, exchange_token=exchange_token, tradingsymbol=tradingsymbol,name=name,expiry=expiry,tick_size=tick_size,strike=strike,lot_size=lot_size,instrument_type=instrument_type,segment=segment,exchange=exchange)
             instrumentModel.save()
 
@@ -207,8 +240,11 @@ def order_exists(orderId):
 def settings_exists():
     return Preferences.objects.filter(scriptName="Default").exists()
 
+positiondict= {}
+
 def getPositions():
     positionsdict = kite.positions()
+    updatePostions(positionsdict)
     positions = positionsdict['net']
     # print(positions)
     if len(positions) > 0:
@@ -295,17 +331,38 @@ def total_pnl():
 #=========================
 #Steps for the logic
 
+def CheckTradingTime():
+    todaysDateTime = datetime.now() + timedelta(hours=5, minutes=30)
+    todaysDate = todaysDateTime.date()
+    MarketStartTime= str(todaysDate).replace("-","/") + " 9:15:00"
+    strpMarketStartTime = datetime.strptime(MarketStartTime, "%Y/%m/%d %H:%M:%S")
+    # print(strpMarketStartTime,":strptime:++++++++++++++++++++++++++++++++")
+    MarketEndTime= str(todaysDate).replace("-","/") + " 15:15:00"
+    strpMarketEndTime = datetime.strptime(MarketEndTime, "%Y/%m/%d %H:%M:%S")
+    #Get value from Settings
+    settings = Preferences.objects.all()
+    #TIME : Get seconds value from settings
+    startTime = settings.values()[0]['time']
+    # print(startTime,":startTime=================")
+    newStartTime = strpMarketStartTime + timedelta(seconds=startTime)
+    # print(newStartTime,"_________________________++")
+    if (newStartTime < todaysDateTime) and (todaysDateTime < strpMarketEndTime):
+        return True
+    return False
 
 def coreLogic(): #A methond to check 
-    # print(liveData,"++++++++++++++++++++++++coming from corelogic consumers")
     threading.Timer(1.0, coreLogic).start()
-    watchForAlgowatchlistBuySellLogic()
-    watchForManualListBuySellLogic()
+    checkTrade = CheckTradingTime()
     getPositions()
+    if checkTrade:  
+        watchForAlgowatchlistBuySellLogic()
+    
+    watchForManualListBuySellLogic()
+
 
 def watchForAlgowatchlistBuySellLogic():
 
-    # print(liveData,"++++++++++++++++++++++++coming from watchforalgo consumers testing again")
+    # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
     algoArray = AlgoWatchlist.objects.all()
     # print(algoArray, "++++++++++++++++Algo Array Values=============")
 
@@ -357,12 +414,12 @@ def watchForAlgowatchlistBuySellLogic():
                     potionObject = postions.values()[0]
                     print("SL Price = " + str(potionObject['slPrice']))
                     print("TG Price = " + str(potionObject['tgPrice']))
-                    print("Current Price = " + str(liveValues['LTP']))
+                    print("Current Price = " + str(liveValues['LTP']) + "Of ======= Instrument", items.instruments)
                     print("Next Qty to trade ============================= ", items.qty)
                     if potionObject['positionType'] == "BUY": #IF_check if position is BUY and 
-                        finalQty = 0
                         if liveValues['LTP'] <= potionObject['slPrice']:
-                            if items.qty >= potionObject['qty']:
+                            finalQty = 0
+                            if items.qty > potionObject['qty']:
                                 finalQty = items.qty
                             else:
                                 finalQty = (potionObject['qty'])*2
@@ -376,6 +433,7 @@ def watchForAlgowatchlistBuySellLogic():
                             print("Position BUYALGO, No SL, No TG so continue")
                     elif potionObject['positionType'] == "SELL":#ELSE_check if positino is SELL
                         if liveValues['LTP'] >= potionObject['slPrice']: #if CMP >= SL
+                            finalQty = 0
                             if items.qty > potionObject['qty']:
                                 finalQty = items.qty
                             else:
@@ -438,7 +496,7 @@ def watchForManualListBuySellLogic():
                     potionObject = postions.values()[0]
                     print("SL Price = " + str(potionObject['slPrice']))
                     print("TG Price = " + str(potionObject['tgPrice']))
-                    print("Current Price = " + str(liveValues['LTP']))
+                    print("Current Price = " + str(liveValues['LTP']) + "Of ======= Instrument", items.instruments)
                     print("Current Postion = " + str(potionObject['positionType']))
                     print("Next Qty to trade ============================= ", items.qty)
                     if potionObject['positionType'] == "BUY": #IF_check if position is BUY and 
@@ -555,24 +613,27 @@ def buySingle(request): #For Manual watchlist
     print("Came from JS to buy single" + request.POST['script'])
     print("Came from JS to start" + request.POST['scriptQty'])
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
+    ManualWatchlist.objects.filter(instruments = request.POST['script']).update(positionType = "BUY")
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isBuyClicked = True)
-    return redirect(request.META['HTTP_REFERER'])
+    sleep(1)
+    return HttpResponse("success")
 
 def sellSingle(request): #For Manual watchlist
     print("Came from JS to sell single" + request.POST['script'])
     print("Came from JS to start" + request.POST['scriptQty'])
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
+    ManualWatchlist.objects.filter(instruments = request.POST['script']).update(positionType = "SELL")
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
     ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isSellClicked = True)
-    return redirect(request.META['HTTP_REFERER'])
+    return HttpResponse("success")
 
 def startSingle(request): #For Manual watchlist
     # print(liveData,"++++++++++++++++++++++++coming from consumers")
     print("Came from JS to start" + request.POST['script'],)
     AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = True)
     AlgoWatchlist.objects.filter(instruments = request.POST['script']).update(qty = int(request.POST['scriptQty']))
-    return redirect(request.META['HTTP_REFERER'])
+    return HttpResponse("success")
     
 def stopSingle(request): #For Manual and Algo watchlist
     print("Came from JS to stop" + request.POST['script'])
@@ -585,7 +646,7 @@ def stopSingle(request): #For Manual and Algo watchlist
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(startAlgo = False)
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isSellClicked = False)
         ManualWatchlist.objects.filter(instruments = request.POST['script']).update(isBuyClicked = False)
-    return redirect(request.META['HTTP_REFERER'])
+    return HttpResponse("success")
 
 def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg, isFromAlgo, orderId, isCloseTrade):
     #type should be "BUY" or "SELL"
@@ -607,9 +668,9 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
         
         if not isCloseTrade:
 
-            orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
-                    tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
-                    product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
+            # orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
+            #         tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
+            #         product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
             print("Order places successfully=================")
             if isFromAlgo:
                 print("Algo Open Position Updated=================")
@@ -621,20 +682,20 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
                 ManualWatchlist.objects.filter(instruments = scriptCode).update(entryprice = ltp)
             orderId = format(orderId)
             # orderId = random_with_N_digits(4)
-            getPositions()
+            # getPositions()
             getPositionAndUpdateModels(ltp,scriptCode, orderId, type)
         else:
 
-            print("Order not places successfully=============================")
-            orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
-                    tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
-                    product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
+            print("Order closed successfully=============================")
+            # orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType, 
+            #         tradingsymbol=scriptCode, transaction_type=type, quantity=abs(scriptQty),
+            #         product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
             if isFromAlgo:
                 AlgoWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
             else:
                 ManualWatchlist.objects.filter(instruments = scriptCode).update(openPostion = False)
 
-            getPositions()
+            # getPositions()
             if position_exists(scriptCode):
                 Positions.objects.filter(instruments = scriptCode).update(qty=0)
     except Exception as e:
@@ -708,16 +769,8 @@ def random_with_N_digits(n):
     range_end = (10**n)-1
     return randint(range_start, range_end)
 
-# while len(liveData.keys()) != len(list(subscriberlist.keys())):
-#     continue
+# while datetime.datetime.now().time() > datetime.time(9,14,00):
+    # isIntrumentDownloaded = False
 
-# print("Connected to web socket")
 
-# while datetime.time(9,15,30) >= datetime.datetime.now().time():
-#     time.sleep(2)
-
-# #strategy loop
-# history = {}
-# while datetime.time(9,15,30) < datetime.datetime.now().time() < datetime.time(15,15):
-#     coreLogic(liveData)
 

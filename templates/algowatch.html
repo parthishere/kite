@@ -24,8 +24,8 @@ $(document).ready(function(){
 {% block title %} OpenAlgo {% endblock title %}
 {% block NavbarComp %}
 <li class="nav-item">
-  <a class="nav-link" href="/home">Home</a>
-</li>
+    <a class="nav-link" href="/home">Home</a>
+  </li>
 <li class="nav-item">
   <a class="nav-link active" href="/algowatch">Algowatch</a>
 </li>
@@ -52,8 +52,8 @@ $(document).ready(function(){
                         <div class="col-sm-6 autocomplete"><span class="float-right">
                             <form autocomplete="off" action="/action_page.php">
                                 <input id="myInput" class="AlgoWatch" name="myCountry" type="text" placeholder="Search Script">
-                                <a href="#" class="btn btn-success" onclick="startAll()"><span> Start All</span></a>
-                                <a href="#" class="btn btn-danger" onclick="stopAll()"><span>Stop All</span></a>
+                                {% comment %} <a href="#" class="btn btn-success" onclick="startAll()"><span> Start All</span></a> {% endcomment %}
+                                {% comment %} <a href="#" class="btn btn-danger" onclick="stopAll()"><span>Stop All</span></a> {% endcomment %}
                               </form>
                             				
                         </div>
@@ -131,24 +131,23 @@ $(document).ready(function(){
                         {% for position in positionArray %}
                         <tr>
                             <td>{{position.instruments}}</td>
-                            <td>{{position.qty}}</td>
-                            <td>{{position.entryprice}}</td>
-                            <td>{{position.avgTradedPrice}}</td>
-                            <td>{{position.lastTradedPrice}}</td>                        
-                            {% comment %} <td>{{position.unrealised}}</td> {% endcomment %}
-                            {% comment %} <td>{{position.realised}}</td> {% endcomment %}
+                            <td id="{{position.instruments}}qty">{{position.qty}}</td>
+                            <td id="{{position.instruments}}entryPrc">{{position.entryprice}}</td>
+                            <td id="{{position.instruments}}avgTrde">{{position.avgTradedPrice}}</td>
+                            <td id="{{position.instruments}}ltp">1</td>
                             {% if  position.qty == 0 %}
                                 <td style="color: black; font-weight:bold">Closed</td>
                             {% else %}
                                 <td>
-                                    <a href="#" class="btn btn-danger" onclick="stopAlgo('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
+                                    <a href="#" class="btn btn-danger" onclick="stopAlgoManual('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
                                 </td>
-                            {% endif %}   
+                            {% endif %} 
                             {% if  position.pnl > 0 %}
-                                <td style="color: green; font-weight:bold">{{position.pnl}}</td>
+                                <td id="{{position.instruments}}pnl" style="color: green; font-weight:bold">{{position.pnl}}</td>
                             {% else %}
-                                <td style="color: red; font-weight:bold">{{position.pnl}}</td>
-                            {% endif %}  
+                                <td id="{{position.instruments}}pnl" style="color: red; font-weight:bold">{{position.pnl}}</td>
+                            {% endif %}   
+                             
                         </tr>
                         {% endfor %}
                         <tr style="background: #f6f8ff;">

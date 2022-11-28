@@ -13,6 +13,9 @@ class Preferences(models.Model):
     openingrangebox = models.BooleanField(default=False, null=True)
     scriptName = models.CharField(max_length = 100, default = "Default")
 
+class DateTimeCheck(models.Model):
+    dateCheck = models.DateField(null=True)
+
 class AlgoWatchlist(models.Model):
     instruments = models.CharField(max_length = 100)
     instrumentsToken = models.CharField(max_length = 100, default = "1111")

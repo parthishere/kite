@@ -11,8 +11,9 @@ from django.db.models import Q
 #=========================
 ## Websocket Data Connection Methods
 #=========================
-subscriberlist = {256265: "NIFTY 50"}
+subscriberlist = {5633: "ACC"}
 liveData = {}
+newPositionsdict = {}
 # instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
 # for instrumentObject in instrumentUpdate:
 #     tokens = instrumentObject.get('instrument_token')
@@ -26,7 +27,13 @@ def updateSubscriberList(token, tradingSymbol, isSubscribe):
     else: 
         if len(subscriberlist) > 0:
             subscriberlist.pop(int(token))
-    
+
+
+def updatePostions(positionsdict):
+    newPositionsdict["new"] = positionsdict
+
+
+
 def startLiveConnection(token):
     kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
     kws.on_ticks = on_ticks
@@ -37,6 +44,7 @@ def on_ticks(ws, ticks):
     # Callback to receive ticks.
     # logging.debug("Ticks: {}".format(ticks))
     subscriptionStatus(ws)
+
     for stock in ticks:
         # print(stock['instrument_token'])
         # print(list(subscriberlist.keys()))
@@ -82,12 +90,15 @@ class MyAsyncConsumer(AsyncConsumer):
         # print(liveData,"______________________++++++++++liev data 1")
         # counter = 0
         while True:
+            valDict = {}
             # print(liveData,"______________________++++++++++liev data 2")
             await asyncio.sleep(1)
+            valDict["liveData"] = liveData
+            valDict["position"] = newPositionsdict['new']
             # counter+=1
             await self.send({
                 'type':'websocket.send',
-                'text': json.dumps(liveData)
+                'text': json.dumps(valDict)
             })
             # print(subscriberlist, "++++++++Subscriber list++++++++++")
             # sleep(1)

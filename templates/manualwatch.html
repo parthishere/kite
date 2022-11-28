@@ -78,7 +78,6 @@ $(document).ready(function(){
                             <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "1"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
-                            
                             {% if  instrument.openPostion %}
                                 {% if  instrument.positionType == "BUY" %}
                                     <td style="color: green; font-weight:bold">Open Position</td>
@@ -131,24 +130,22 @@ $(document).ready(function(){
                         {% for position in positionArray %}
                         <tr>
                             <td>{{position.instruments}}</td>
-                            <td>{{position.qty}}</td>
-                            <td>{{position.entryprice}}</td>
-                            <td>{{position.avgTradedPrice}}</td>
-                            <td>{{position.lastTradedPrice}}</td>
+                            <td id="{{position.instruments}}qty">{{position.qty}}</td>
+                            <td id="{{position.instruments}}entryPrc">{{position.entryprice}}</td>
+                            <td id="{{position.instruments}}avgTrde">{{position.avgTradedPrice}}</td>
+                            <td id="{{position.instruments}}ltp">1</td>
                             {% if  position.qty == 0 %}
                                 <td style="color: black; font-weight:bold">Closed</td>
                             {% else %}
                                 <td>
                                     <a href="#" class="btn btn-danger" onclick="stopAlgoManual('{{position.instruments}}')"><span> Exit & Stop Algo</span></a>
                                 </td>
-                            {% endif %}  
+                            {% endif %} 
                             {% if  position.pnl > 0 %}
-                                <td style="color: green; font-weight:bold">{{position.pnl}}</td>
+                                <td id="{{position.instruments}}pnl" style="color: green; font-weight:bold">{{position.pnl}}</td>
                             {% else %}
-                                <td style="color: red; font-weight:bold">{{position.pnl}}</td>
+                                <td id="{{position.instruments}}pnl" style="color: red; font-weight:bold">{{position.pnl}}</td>
                             {% endif %}   
-                            {% comment %} <td>{{position.unrealised}}</td> {% endcomment %}
-                            {% comment %} <td>{{position.realised}}</td> {% endcomment %}
                              
                         </tr>
                         {% endfor %}
@@ -214,8 +211,10 @@ $(document).ready(function(){
                 url: 'buySingle',
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: buyScriptQty },
                 success: function callback(response){
-                            console.log(response);
-                         }
+                    if (response === "success"){
+                        window.location.reload();
+                        }
+                        }
              });   
         }
 
