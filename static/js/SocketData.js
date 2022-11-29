@@ -46,7 +46,7 @@ socket.addEventListener('message',(event)=>{
             continue
         } 
         let stock_main_avgTrde = allPosition[position]['average_price'];
-        stock_avgTrde.innerText = stock_main_avgTrde;
+        stock_avgTrde.innerText = roundToTwo(stock_main_avgTrde);
 
         // =========================================
         let stock_pnl = document.getElementById(allPosition[position]['tradingsymbol']+"pnl");
@@ -55,8 +55,13 @@ socket.addEventListener('message',(event)=>{
             continue
         } 
         let stock_main_pnl = allPosition[position]['pnl'];
-        stock_pnl.innerText = stock_main_pnl;
+        stock_pnl.innerText = roundToTwo(stock_main_pnl);
+        // console.log(allPosition[position]['tradingsymbol'] + " " +  stock_main_pnl)
 
+    }
+
+    function roundToTwo(num) {
+        return +(Math.round(num + "e+2")  + "e-2");
     }
 })
 

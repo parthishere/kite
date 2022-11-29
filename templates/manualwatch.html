@@ -118,8 +118,8 @@ $(document).ready(function(){
                             <th scope="col">Instruments</th>
                             <th scope="col">Qty</th>
                             <th scope="col">Entry Price</th>
-                            <th scope="col">Average Price</th>
                             <th scope="col">LTP</th>
+                            <th scope="col">Average Price</th>
                             {% comment %} <th scope="col">Unrealised</th> {% endcomment %}
                             {% comment %} <th scope="col">Realised</th> {% endcomment %}
                             <th scope="col">Actions</th>
@@ -132,8 +132,8 @@ $(document).ready(function(){
                             <td>{{position.instruments}}</td>
                             <td id="{{position.instruments}}qty">{{position.qty}}</td>
                             <td id="{{position.instruments}}entryPrc">{{position.entryprice}}</td>
-                            <td id="{{position.instruments}}avgTrde">{{position.avgTradedPrice}}</td>
                             <td id="{{position.instruments}}ltp">1</td>
+                            <td id="{{position.instruments}}avgTrde">{{position.avgTradedPrice}}</td>
                             {% if  position.qty == 0 %}
                                 <td style="color: black; font-weight:bold">Closed</td>
                             {% else %}
@@ -225,8 +225,10 @@ $(document).ready(function(){
                 url: 'sellSingle',
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: sellScriptQty },
                 success: function callback(response){
-                            console.log(response);
-                         }
+                    if (response === "success"){
+                        window.location.reload();
+                        }
+                    }
              });
         }
 
@@ -238,8 +240,10 @@ $(document).ready(function(){
                 url: 'stopAlgo',
                 data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1, isFromAlgoTest: "false" },
                 success: function callback(response){
-                            console.log(response);
-                         }
+                    if (response === "success"){
+                        window.location.reload();
+                        }
+                    }
              });
         }
         </script>
