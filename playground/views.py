@@ -37,7 +37,6 @@ positiondict= {}
 timeToStart = 0.0
 #liveData = {}
 # liveData = {'ABB': {'Open': 3103.9, 'High': 3240.0, 'Low': 3054.5, 'Close': 3103.9, 'LTP': 3166.9}, 'ITC': {'Open': 359.0, 'High': 359.9, 'Low': 354.1, 'Close': 360.7, 'LTP': 356.0}, 'BPCL': {'Open': 306.0, 'High': 307.95, 'Low': 304.2, 'Close': 306.85, 'LTP': 305.5}, 'HDFC': {'Open': 2480.2, 'High': 2508.4, 'Low': 2467.8, 'Close': 2503.5, 'LTP': 2504.1}, 'RELIANCE': {'Open': 2590.0, 'High': 2596.55, 'Low': 2563.0, 'Close': 2604.0, 'LTP': 2572.5}, 'IEX': {'Open': 142.6, 'High': 142.6, 'Low': 138.85, 'Close': 142.6, 'LTP': 140.2}}
-byPassZerodha = True
 
 #=========================
 ## All Views Functions
@@ -48,7 +47,6 @@ def index(request):
 
 def home(request):
     if kite.access_token is None:
-        # messages.error(request, 'Authentication Failed! Please login again home =======')
         return redirect("/")
     TimeObjData = DateTimeCheck.objects.all()
     if TimeObjData.exists():
@@ -77,7 +75,6 @@ def algowatch(request):
 
     #Return to home page is user is not loggedin using Zerodha
     if kite.access_token is None:
-        # messages.error(request, 'Authentication Failed! Please login again +++++++++')
         return redirect("/")
 
     positionArray = getPositions()
@@ -88,10 +85,9 @@ def algowatch(request):
     
 def manualwatch(request):
 
-    if kite.access_token is None and byPassZerodha:
+    if kite.access_token is None:
         return redirect("/")
     positionArray = getPositions()
-
     totalPNL = total_pnl()
     manualWatchlistArray = ManualWatchlist.objects.all()
     allInstruments = list(Instruments.objects.all().values_list('tradingsymbol', flat=True))
@@ -104,7 +100,7 @@ def updateSavedSubscriberList(instrumentArray):
 
 def orders(request):
 
-    if kite.access_token is None and byPassZerodha:
+    if kite.access_token is None:
         return redirect("/")
 
     ordersArray = getOrders()
@@ -114,7 +110,7 @@ def orders(request):
     return render(request, 'orders.html', {'orderArrayList': ordersArray})
 
 def settings(request):
-    if kite.access_token is None and byPassZerodha:
+    if kite.access_token is None:
         return redirect("/")
     
     if request.method == "POST":
@@ -231,7 +227,9 @@ def getPositions():
     positionsdict = kite.positions()
     updatePostions(positionsdict)
     positions = positionsdict['net']
-    # print("PNL Value:======", positions)
+    entryPrice = 0.0
+    
+    
     # print(positions)
     if len(positions) > 0:
         #if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
@@ -240,20 +238,23 @@ def getPositions():
             #For Open Buy position
             if int(position['quantity']) > 0: 
                 # print("Checking for buy postion " + position['tradingsymbol'])
+                
                 if ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
-                    ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, positionType="BUY", isBuyClicked=False, isSellClicked=False, qty=position['quantity'])
+                    ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, positionType="BUY", isBuyClicked=False, isSellClicked=False)#qty=position['quantity']
+                    entryPrice = float(ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"])
                 else:
-                    AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, qty=position['quantity'])
+                    AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True)
+                    entryPrice = float(AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"])
                 
                 
                 if not position_exists(position['tradingsymbol']):
                     #Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
                     positionObject = Positions(instruments = position['tradingsymbol'], qty = position['quantity'], avgTradedPrice = round(position['average_price'],2), pnl = round(position['pnl'],2), startAlgo=True)
-                    positionObject.save()        
-                    #getPositionAndUpdateModels(ltp=position['buy_price'],scriptCode=position['tradingsymbol'],orderId="",type="BUY")       
+                    positionObject.save()   
+                    getPositionAndUpdateModels(ltp=entryPrice,scriptCode=position['tradingsymbol'],orderId="",type="BUY")       
                 else:
                     # print("Updating New Buy Positions")
-                    #getPositionAndUpdateModels(ltp=position['buy_price'],scriptCode=position['tradingsymbol'],orderId="",type="BUY")
+                    getPositionAndUpdateModels(ltp=entryPrice,scriptCode=position['tradingsymbol'],orderId="",type="BUY")
                     Positions.objects.filter(instruments = position['tradingsymbol']).update(qty = position['quantity'], avgTradedPrice = round(position['average_price'],2), pnl = round(position['pnl'],2),startAlgo=True)
 
             #For Open sell position
@@ -263,18 +264,20 @@ def getPositions():
                 setQty = abs(position['quantity'])
                 
                 if ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
-                    ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, positionType="SELL", isBuyClicked=False, isSellClicked=False, qty=setQty)
+                    ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, positionType="SELL", isBuyClicked=False, isSellClicked=False)#, qty=setQty
+                    entryPrice = float(ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"])
                 else:
-                    AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True, qty=setQty)
+                    AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=True, startAlgo=True)
+                    entryPrice = float(AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"])
 
                 if not position_exists(position['tradingsymbol']):
                     #Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
                     positionObject = Positions(instruments = position['tradingsymbol'], qty = position['quantity'], avgTradedPrice = round(position['average_price'],2), pnl = round(position['pnl'],2), startAlgo=True)
                     positionObject.save()        
-                    #getPositionAndUpdateModels(ltp=position['sell_price'],scriptCode=position['tradingsymbol'],orderId="",type="SELL")       
+                    getPositionAndUpdateModels(ltp=entryPrice,scriptCode=position['tradingsymbol'],orderId="",type="SELL")       
                 else:
                     # print("Updating New Sell Positions")
-                    #getPositionAndUpdateModels(ltp=position['sell_price'],scriptCode=position['tradingsymbol'],orderId="",type="SELL")
+                    getPositionAndUpdateModels(ltp=entryPrice,scriptCode=position['tradingsymbol'],orderId="",type="SELL")
                     Positions.objects.filter(instruments = position['tradingsymbol']).update(qty = position['quantity'], avgTradedPrice = round(position['average_price'],2), pnl = round(position['pnl'],2),startAlgo=True)
             
             #For Closed Positions
@@ -567,7 +570,7 @@ def scaleUpQty(request):
         AlgoWatchlist.objects.filter(instruments = script).update(qty = qty)
     else:
         ManualWatchlist.objects.filter(instruments = script).update(qty = qty)
-    return None
+    return HttpResponse("success")
 
 def scaleDownQty(request):
     script= request.POST['script']
@@ -578,7 +581,7 @@ def scaleDownQty(request):
         AlgoWatchlist.objects.filter(instruments = script).update(qty = qty)
     else:
         ManualWatchlist.objects.filter(instruments = script).update(qty = qty)
-    return None
+    return HttpResponse("success")
 
 from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
