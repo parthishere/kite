@@ -24,7 +24,10 @@ from .consumers import liveData, startLiveConnection, updateSubscriberList, upda
 from django.http import JsonResponse
 from datetime import datetime, date, timedelta, time
 from time import gmtime, strftime
-# logging.basicConfig(level=logging.DEBUG)
+import logging
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.DEBUG)
 
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
 
@@ -46,8 +49,12 @@ def index(request):
     return render(request, 'index.html')    
 
 def home(request):
+
+    logging.info("In Home Page")
+    logging.info("In Home Page with access token",kite.access_token)
     if kite.access_token is None:
         return redirect("/")
+
     TimeObjData = DateTimeCheck.objects.all()
     if TimeObjData.exists():
         TimeObj = TimeObjData.first()
@@ -67,12 +74,14 @@ def loginUser(request):
         if request.GET['request_token'] != "":
             data = kite.generate_session(request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
             kite.set_access_token(data["access_token"])
+            logging.warning("Access token=====",data["access_token"])
             startLiveConnection(str(kite.access_token))
             coreLogic()
             return redirect('Home')
 
 def algowatch(request):
 
+    logging.warning("Access token in algowatch=====",kite.access_token)
     #Return to home page is user is not loggedin using Zerodha
     if kite.access_token is None:
         return redirect("/")
@@ -85,6 +94,7 @@ def algowatch(request):
     
 def manualwatch(request):
 
+    logging.warning("Access token in manualwatch=====",kite.access_token)
     if kite.access_token is None:
         return redirect("/")
     positionArray = getPositions()
@@ -100,6 +110,7 @@ def updateSavedSubscriberList(instrumentArray):
 
 def orders(request):
 
+    logging.warning("Access token in orders=====",kite.access_token)
     if kite.access_token is None:
         return redirect("/")
 
@@ -197,7 +208,7 @@ def instrumentObjectToManualWatchlistObject(instrumentUpdate):
         tradingSymbol = instrumentObject.get('tradingsymbol')
         if not ManualWatchlist.objects.filter(instruments=tradingSymbol).exists():
             manualWatlistObject = ManualWatchlist(instruments=tradingSymbol, instrumentsToken = instrumentObject.get('instrument_token'),
-            exchangeType = instrumentObject.get('exchange'), segment = instrumentObject.get('segment'), instrumentType = instrumentObject.get('instrument_type'))
+            exchangeType = instrumentObject.get('exchange'), segment = instrumentObject.get('segment'), instrumentType = instrumentObject.get('instrument_type'), qty = instrumentObject.get('lot_size'))
             manualWatlistObject.save()
         
 def instrumentObjectToAlgoWatchlistObject(instrumentUpdate):
@@ -205,7 +216,7 @@ def instrumentObjectToAlgoWatchlistObject(instrumentUpdate):
         tradingSymbol = instrumentObject.get('tradingsymbol')
         if not AlgoWatchlist.objects.filter(instruments=tradingSymbol).exists():
             algoWatlistObject = AlgoWatchlist(instruments=tradingSymbol, instrumentsToken = instrumentObject.get('instrument_token'),
-            exchangeType = instrumentObject.get('exchange'), segment = instrumentObject.get('segment'), instrumentType = instrumentObject.get('instrument_type'))
+            exchangeType = instrumentObject.get('exchange'), segment = instrumentObject.get('segment'), instrumentType = instrumentObject.get('instrument_type'), qty = instrumentObject.get('lot_size'))
             algoWatlistObject.save()
             
 def username_exists(username):
@@ -348,8 +359,8 @@ def coreLogic(): #A methond to check
         watchForAlgowatchlistBuySellLogic()
     
     watchForManualListBuySellLogic()
-    sleep(1)
-    getPositions()    
+    # sleep(1)
+    # getPositions()    
 
 
 def watchForAlgowatchlistBuySellLogic():

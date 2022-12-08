@@ -75,7 +75,7 @@ $(document).ready(function(){
                             <td>{{instrument.instruments}}</td>
                             <td id='{{instrument.instruments}}ltp'>2</td>
                             <td>{{instrument.slHitCount}}</td>
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "1"/></td>
+                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = {{instrument.qty}}/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
                             {% if  instrument.openPostion %}

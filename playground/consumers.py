@@ -8,9 +8,13 @@ from kiteconnect import KiteConnect, KiteTicker
 from playground import kiteconnect, constants
 from playground.models import Instruments
 from django.db.models import Q
+import logging
 #=========================
 ## Websocket Data Connection Methods
 #=========================
+logger = logging.getLogger()
+logging.basicConfig(level=logging.DEBUG)
+
 subscriberlist = {5633: "ACC"}
 liveData = {}
 newPositionsdict = {}
@@ -22,6 +26,7 @@ newPositionsdict = {}
 #         subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
 
 def updateSubscriberList(token, tradingSymbol, isSubscribe):
+    
     if isSubscribe:
         subscriberlist[int(token)] = tradingSymbol
     else: 
@@ -35,6 +40,12 @@ def updatePostions(positionsdict):
 
 
 def startLiveConnection(token):
+
+    logger.info("Starting live connecton with zerodha")
+    logger.info("Starting live connecton with zerodha")
+
+    logger.info("Starting live connecton with zerodha key + ", constants.KITE_API_KEY)
+    logger.info("Starting live connecton with zerodha access token+ ", token)
     kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
     kws.on_ticks = on_ticks
     kws.on_connect = on_connect
@@ -57,6 +68,7 @@ def on_ticks(ws, ticks):
             "LTP": stock['last_price']}
         # coreLogic(liveData)
         # print("Checking live data")
+        # logger.warning("Live data in orders=====",liveData)
         # print(liveData, "+++++============++++++")
 
 def subscriptionStatus(ws):
@@ -71,6 +83,7 @@ def on_connect(ws, response):
     # ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
     # print("Starting new connection with Subscriber list")
     # print(list(subscriberlist.keys()))
+    logger.warning("On connect of kite called=====",list(subscriberlist.keys()))
     ws.subscribe(list(subscriberlist.keys()))
     # Set RELIANCE to tick in `full` mode.
     ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
@@ -83,6 +96,7 @@ def on_close(ws, code, reason):
 
 class MyAsyncConsumer(AsyncConsumer):
     async def websocket_connect(self, event):
+        logger.warning('WEBSOCKET CONNECTED=================================')
         print("WEBSOCKET CONNECTED...........",event)
         await self.send({
             'type':'websocket.accept'
@@ -115,6 +129,7 @@ class MyAsyncConsumer(AsyncConsumer):
         # })
 
     async def websocket_disconnect(self, event):
+        logger.warning("WEBSOCKET DISCONNECTED=====",event)
         print("WEBSOCKET DISCONNECTED////////////////////",event)
         raise StopConsumer()
 

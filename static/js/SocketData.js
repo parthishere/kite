@@ -1,9 +1,9 @@
 // const tokenValue = JSON.parse(document.getElementById('fetchToken').textContent);
 // console.log(tokenValue,"+++++++++++++++++++++++")
-        
 // Websocket starts Here
 // var socket = new WebSocket('ws://'+ window.location.host +'/ws/stock/'+tokenValue)
-var socket = new WebSocket('ws://'+ window.location.host +'/ws/stock/')
+var socket = new WebSocket('ws://'+ window.location.host +'/ws/stock')
+// var socket = new WebSocket('wss://tradingwithalgo.in/ws/stockalgo')
 socket.addEventListener('open',()=>{
     console.log("Websocket Connection Open............");
     /*let message = tokenValue;

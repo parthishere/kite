@@ -33,7 +33,7 @@
 </li>
 {% endblock NavbarComp %}
 {% block body %} 
-<body>
+{% comment %} <body>
     <!-- TradingView Widget BEGIN -->
   <div class="tradingview-widget-container">
     <div id="tradingview_a26be"></div>
@@ -73,6 +73,6 @@
   }
     );
     </script>
-  </div>
+  </div> {% endcomment %}
   <!-- TradingView Widget END -->
 {% endblock body %}
