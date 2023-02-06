@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'kitetrades.urls'
@@ -118,11 +119,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
+# WhiteNoise Configurations
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
 STATIC_URL = '/static/'
-STATIC_ROOT = "/var/www/tradingwithalgo.in/static/"
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+# STATIC_ROOT = "/var/www/tradingwithalgo.in/static/"
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",
+# ]
 
 # MEDIA_ROOT = BASE_DIR / 'media'
 # MEDIA_URL = ''
@@ -132,32 +136,3 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ASGI_APPLICATION = "kitetrades.asgi.application"
-
-LOGGING = {
-    'version': 1,
-    # The version number of our log
-    'disable_existing_loggers': False,
-    # django uses some of its own loggers for internal operations. In case you want to disable them just replace the False above with true.
-    # A handler for WARNING. It is basically writing the WARNING messages into a file called WARNING.log
-    'handlers': {
-        'file': {
-            'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'warning.log',
-        },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'info.log',
-        },
-    },
-    # A logger for WARNING which has a handler called 'file'. A logger can have multiple handler
-    'loggers': {
-       # notice the blank '', Usually you would put built in loggers like django or root here based on your needs
-        '': {
-            'handlers': ['file'], #notice how file variable is called in handler which has been defined above
-            'level': 'WARNING',
-            'propagate': True,
-        },
-    },
-}

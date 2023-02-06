@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.index, name="HomeIndex"),
     path("login", views.loginUser,name="Login"),
+    path("autologin", views.loginWithZerodha,name="Autologin"),
     path("home", views.home,name="Home"),
     path("algowatch", views.algowatch,name="Algowatch"),
     path("manualwatch", views.manualwatch, name="Manualwatch"),

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/docs/4.0/assets/img/favicons/favicon.ico">
+
+    <title>OpenAlgo | A Algo Trading Software</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/sign-in/">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Bootstrap core CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+
+    <!-- Custom styles for this template -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  </head>
+
+  <body class="text-center">
+    <form class="form-signin">
+      {% comment %} <form class="form-signin" action="algowatch"> {% endcomment %}
+      <img class="mb-4" src="{% static 'img/zerodhalogo.png' %}" alt="" width="92" height="72">
+        <a href="https://kite.zerodha.com/connect/login?v=3&api_key={{api_key}}" class="btn btn-lg btn-primary btn-block">Signin with Zerodha</a>
+        {% comment %} <a href="#" class="btn btn-lg btn-primary btn-block" onclick="loginWithZerodha()">Signin with Zerodha</a> {% endcomment %}
+        <p class="mt-5 mb-3 text-muted">&copy; 2022-2023</p>
+    </form>
+  </body>
+
+  <script type="text/javascript">
+    function loginWithZerodha(){
+      console.log("Auto login with zerodha")
+      $.ajax({
+          type: "POST",
+          url: 'autologin',
+          data: { csrfmiddlewaretoken: '{{ csrf_token }}'},
+          success: function callback(response){
+              if (response === "success"){
+                  window.location.reload();
+                  }
+              }
+       });
+  }
+  </script>
+</html>
+

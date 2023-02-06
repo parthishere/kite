@@ -1,23 +1,29 @@
 import asyncio
+from datetime import datetime
 from time import sleep
 from channels.consumer import AsyncConsumer
 from channels.exceptions import StopConsumer
+from asgiref.sync import sync_to_async
+from .models import ManualWatchlist, AlgoWatchlist
 from time import sleep
 import json
 from kiteconnect import KiteConnect, KiteTicker
-from playground import kiteconnect, constants
+from playground import constants
 from playground.models import Instruments
 from django.db.models import Q
 import logging
-#=========================
-## Websocket Data Connection Methods
-#=========================
-logger = logging.getLogger()
-logging.basicConfig(level=logging.DEBUG)
+# =========================
+# Websocket Data Connection Methods
+# =========================
+# logger = logging.getLogger()
+logging.basicConfig(filename='weberror.log', level=logging.DEBUG)
+logger = logging.getLogger('spam')
 
-subscriberlist = {5633: "ACC"}
+subscriberlist = {}
+defaultsubscriberlist = {256265: 'NIFTY 50', 260105: 'NIFTY BANK'}
 liveData = {}
 newPositionsdict = {}
+updatedPNL = {}
 # instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
 # for instrumentObject in instrumentUpdate:
 #     tokens = instrumentObject.get('instrument_token')
@@ -25,11 +31,11 @@ newPositionsdict = {}
 #         # print("Adding token to subscriber list")
 #         subscriberlist[int(tokens)] = instrumentObject.get('tradingsymbol')
 
+
 def updateSubscriberList(token, tradingSymbol, isSubscribe):
-    
     if isSubscribe:
         subscriberlist[int(token)] = tradingSymbol
-    else: 
+    else:
         if len(subscriberlist) > 0:
             subscriberlist.pop(int(token))
 
@@ -38,86 +44,126 @@ def updatePostions(positionsdict):
     newPositionsdict["new"] = positionsdict
 
 
+@sync_to_async
+def getSlHits():
+    data = {
+        'ManualWatch': {},
+        'AlgoWatch': {}
+    }
+
+    for instrument in AlgoWatchlist.objects.all():
+        data['AlgoWatch'][instrument.instruments] = instrument.slHitCount
+
+    for instrument in ManualWatchlist.objects.all():
+        data['ManualWatch'][instrument.slHitCount] = instrument.slHitCount
+
+    return data
+
+
+def updatePNL(pnlValue):
+    # print("PNLValue = ",pnlValue)
+    updatedPNL["pnl"] = pnlValue
+
 
 def startLiveConnection(token):
-
-    logger.info("Starting live connecton with zerodha")
-    logger.info("Starting live connecton with zerodha")
-
-    logger.info("Starting live connecton with zerodha key + ", constants.KITE_API_KEY)
-    logger.info("Starting live connecton with zerodha access token+ ", token)
     kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
     kws.on_ticks = on_ticks
     kws.on_connect = on_connect
     kws.connect(threaded=True)
 
+
 def on_ticks(ws, ticks):
     # Callback to receive ticks.
-    # logging.debug("Ticks: {}".format(ticks))
+    # Update subscribed instrument list
     subscriptionStatus(ws)
 
+    liveData['default_instruments'] = default_instruments = {}
     for stock in ticks:
         # print(stock['instrument_token'])
         # print(list(subscriberlist.keys()))
         # print(subscriberlist[stock['instrument_token']])
-        liveData[subscriberlist[stock['instrument_token']]] = {"Open": stock['ohlc']['open'],
-            "Open": stock['ohlc']['open'],
-            "High": stock['ohlc']['high'],
-            "Low": stock['ohlc']['low'],
-            "Close": stock['ohlc']['close'],
-            "LTP": stock['last_price']}
+        instrument_token = stock['instrument_token']
+        # Put default subscribed instrument data in a separate field
+        if instrument_token in defaultsubscriberlist:
+            default_instruments[defaultsubscriberlist[instrument_token]] = {"Open": stock['ohlc']['open'],
+                                                                            "Open": stock['ohlc']['open'],
+                                                                            "High": stock['ohlc']['high'],
+                                                                            "Low": stock['ohlc']['low'],
+                                                                            "Close": stock['ohlc']['close'],
+                                                                            "LTP": stock['last_price']}
+
+        if instrument_token in subscriberlist:
+            liveData[subscriberlist[instrument_token]] = {"Open": stock['ohlc']['open'],
+                                                          "Open": stock['ohlc']['open'],
+                                                          "High": stock['ohlc']['high'],
+                                                          "Low": stock['ohlc']['low'],
+                                                          "Close": stock['ohlc']['close'],
+                                                          "LTP": stock['last_price']}
+
         # coreLogic(liveData)
         # print("Checking live data")
-        # logger.warning("Live data in orders=====",liveData)
+        # logging.warning('Live data in orders===== %s',stock['last_price'])
         # print(liveData, "+++++============++++++")
 
-def subscriptionStatus(ws):
+        # print(liveData)
+        # manualArray = ManualWatchlist.objects.all()
 
-    # print(subscriberlist, "Subscription Status ====================")
-    ws.subscribe(list(subscriberlist.keys()))
-    ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
+        # print("HERE")
+        # now = datetime.now()
+
+        # dt_string = now.strftime("%H:%M:%S")
+        # print("date and time =", dt_string)
+        # for items in manualArray:
+        #     if items.instruments in liveData:
+        #         liveValues = liveData[items.instruments]
+        #         print(liveValues['LTP'])
+
+
+def subscriptionStatus(ws: KiteTicker):
+    instrument_tokens = list(defaultsubscriberlist.keys()
+                             ) + list(subscriberlist.keys())
+    ws.subscribe(instrument_tokens=instrument_tokens)
+    ws.set_mode(mode=ws.MODE_FULL, instrument_tokens=instrument_tokens)
+
 
 def on_connect(ws, response):
-    # Callback on successful connect.
-    # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
-    # ws.subscribe([3329, 134657, 340481, 56321, 424961, 738561])
-    # print("Starting new connection with Subscriber list")
-    # print(list(subscriberlist.keys()))
-    logger.warning("On connect of kite called=====",list(subscriberlist.keys()))
-    ws.subscribe(list(subscriberlist.keys()))
-    # Set RELIANCE to tick in `full` mode.
-    ws.set_mode(ws.MODE_FULL, list(subscriberlist.keys()))
+    logger.info('====== Connected to KiteTicker ======')
+    subscriptionStatus(ws)
 
-def on_close(ws, code, reason):
+
+def on_close(ws: KiteTicker, code, reason):
     # On connection close stop the main loop
     # Reconnection will not happen after executing `ws.stop()`
     ws.stop()
 
 
 class MyAsyncConsumer(AsyncConsumer):
+
     async def websocket_connect(self, event):
-        logger.warning('WEBSOCKET CONNECTED=================================')
-        print("WEBSOCKET CONNECTED...........",event)
+        logger.info('WEBSOCKET CONNECTED=================================')
+        logger.info("WEBSOCKET CONNECTED...........", event)
+        print("call file ***", event)
         await self.send({
-            'type':'websocket.accept'
+            'type': 'websocket.accept'
         })
-        # print(liveData,"______________________++++++++++liev data 1")
+        # print(liveData, "______________________++++++++++live data 1")
         # counter = 0
         while True:
             valDict = {}
-            # print(liveData,"______________________++++++++++liev data 2")
+            # print(updatedPNL['pnl'],"______________________++++++++++pnl data 2")
             await asyncio.sleep(1)
             valDict["liveData"] = liveData
             valDict["position"] = newPositionsdict['new']
+            valDict["totalpnl"] = updatedPNL.get('pnl', 0)
+            valDict['slHits'] = await getSlHits()
             # counter+=1
             await self.send({
-                'type':'websocket.send',
+                'type': 'websocket.send',
                 'text': json.dumps(valDict)
             })
             # print(subscriberlist, "++++++++Subscriber list++++++++++")
             # sleep(1)
             # print("counter: ", counter)
-
 
     async def websocket_receive(self, event):
         print("Message received from client", event)
@@ -129,8 +175,5 @@ class MyAsyncConsumer(AsyncConsumer):
         # })
 
     async def websocket_disconnect(self, event):
-        logger.warning("WEBSOCKET DISCONNECTED=====",event)
-        print("WEBSOCKET DISCONNECTED////////////////////",event)
+        logger.info("WEBSOCKET DISCONNECTED=====", event)
         raise StopConsumer()
-
-

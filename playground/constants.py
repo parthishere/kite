@@ -1,2 +1,2 @@
-KITE_API_KEY = "vx69n80awe84d7pb"
-KITE_API_SECRETE = "pft3teov8cxts91dpvtuivqeqvxb1wjl"
+KITE_API_KEY = "tcd9hmzvnifwmv7n"
+KITE_API_SECRETE = "8qurs3cmc3xc5ix944934fvbtlz2zp23"
