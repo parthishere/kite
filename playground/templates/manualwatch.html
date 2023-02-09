@@ -81,9 +81,9 @@ $(document).ready(function(){
                             <td id='{{instrument.instruments}}ltp'>2</td>
                             <td id="{{instrument.instruments}}slhit">{{instrument.slHitCount}}</td>
                             {% if  instrument.exchangeType == "NFO" %}
-                                <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = {{instrument.qty}} disabled="disabled"></td>
+                                <td><input type="number" onchange="onQtyChange(this, '{{instrument.instruments}}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = {{instrument.qty}} disabled="disabled"></td>
                             {% else %}
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = {{instrument.qty}}></td>
+                            <td><input type="number" onchange="onQtyChange(this, '{{instrument.instruments}}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = {{instrument.qty}}></td>
                             {% endif %} 
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
@@ -185,37 +185,6 @@ $(document).ready(function(){
     <!-- <script src="{% static 'js/SocketData.js' %}"></script> -->
     <script src="{% static 'js/Instruments.js' %}"></script>
     <script type="text/javascript">
-        function ScaleUpQty(clicked){
-            var qty = document.getElementById(clicked).value;
-            var multipleQty = qty*2;
-            document.getElementById(clicked).value = multipleQty;
-            $.ajax({
-                type: "POST",
-                url: 'scaleUpQty',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "False" },
-                success: function callback(response){
-                            console.log(response);
-                         }
-             });
-        }
-
-        function ScaleDownQty(clicked){
-            let qty = document.getElementById(clicked).value;
-            var multipleQty = 0
-            if (qty > 1) {
-                multipleQty = parseInt(qty/2);
-                document.getElementById(clicked).value = multipleQty;
-            }   
-            $.ajax({
-                type: "POST",
-                url: 'scaleDownQty',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "False" },
-                success: function callback(response){
-                            console.log(response);
-                         }
-             });         
-        }
-
         function BuyOrder(clicked){
             var buyScriptQty = parseInt(document.getElementById(clicked).value);
             $.ajax({

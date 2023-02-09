@@ -10,7 +10,7 @@ from threading import Thread
 import threading
 from urllib import response
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 from playground import constants
 from playground.models import DateTimeCheck, Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
 from django.contrib import messages
@@ -54,7 +54,7 @@ timeToStart = 0.0
 # =========================
 
 
-def index(request):
+def index(request: HttpRequest):
     return render(request, 'index.html', context={'api_key': KITE_API_KEY})
 
 
@@ -460,7 +460,7 @@ def CheckTradingTime():
     market_start_time = current_dt.replace(
         hour=10, minute=0, second=0, microsecond=0)
     market_end_time = current_dt.replace(
-        hour=3, minute=10, second=0, microsecond=0)
+        hour=15, minute=10, second=0, microsecond=0)
 
     # Get value from Settings
     settings = Preferences.objects.first()

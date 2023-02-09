@@ -249,3 +249,51 @@ function deleteInstrument(script) {
     }
   });
 }
+
+
+var baseQty = {};
+
+function getBaseQty(instrument) {
+  if (baseQty[instrument]) {
+    return baseQty[instrument];
+  }
+  let qty = parseInt(document.getElementById(instrument).value);
+  baseQty[instrument] = qty;
+  return qty;
+}
+
+function onQtyChange(element, instrument) {
+  baseQty[instrument] = parseInt(element.value);
+}
+
+function ScaleUpQty(clicked) {
+  var qty = parseInt(document.getElementById(clicked).value);
+  var multipleQty = qty + getBaseQty(clicked);
+  document.getElementById(clicked).value = multipleQty;
+  $.ajax({
+    type: "POST",
+    url: 'scaleUpQty',
+    data: { csrfmiddlewaretoken: getCSRFToken(), script: clicked, scriptQty: multipleQty, isFromAlgoTest: "True" },
+    success: function callback(response) {
+      console.log(response);
+    }
+  });
+}
+
+function ScaleDownQty(clicked) {
+  let qty = parseInt(document.getElementById(clicked).value);
+  if (qty > 1) {
+    var multipleQty = parseInt(qty - getBaseQty(clicked));
+    document.getElementById(clicked).value = multipleQty;
+  } else {
+    return;
+  }
+  $.ajax({
+    type: "POST",
+    url: 'scaleDownQty',
+    data: { csrfmiddlewaretoken: getCSRFToken(), script: clicked, scriptQty: multipleQty, isFromAlgoTest: "True" },
+    success: function callback(response) {
+      console.log(response);
+    }
+  });
+}

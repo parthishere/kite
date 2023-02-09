@@ -87,13 +87,13 @@ $(document).ready(function(){
                             <td id='{{instrument.instruments}}ltp'>{{instrument.lastTradedPrice}}</td>
                             <td id="{{instrument.instruments}}slhit">{{instrument.slHitCount}}</td>
                             {% if  instrument.exchangeType == "NFO" %}
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "{{instrument.qty}}" disabled="disabled"/></td>
+                            <td><input type="number" onchange="onQtyChange(this, '{{instrument.instruments}}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "{{instrument.qty}}" disabled="disabled"/></td>
                             {% else %}
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "{{instrument.qty}}"/></td>
+                            <td><input type="number" onchange="onQtyChange(this, '{{instrument.instruments}}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = "{{instrument.qty}}"/></td>
                             {% endif %} 
                             
-                            <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
-                            <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
+                            <td><a href="#" class="btn btn-info" id="btn-scale-up"  title="Click to scale up qty" onclick="ScaleUpQty('{{instrument.instruments}}')"><span> Scale Up</span></a></td>
+                            <td><a href="#" class="btn btn-warning" id="btn-scale-down" title="Click to scale down qty" onclick="ScaleDownQty('{{instrument.instruments}}')"><span> Scale Down</span></a></td>
                             {% if instrument.startAlgo != False %}    
                                 {% comment %} <a href="#" class="btn btn-danger" onclick="stopAlgo('{{instrument.instruments}}')"><span> Exit & Stop Algo</span></a> {% endcomment %}
                                 <td style="color: green; font-weight:bold">Algo Started</td>
@@ -191,39 +191,6 @@ $(document).ready(function(){
 
     {% block javascript %}
     <script type="text/javascript">
-
-        function ScaleUpQty(clicked){
-            var qty = document.getElementById(clicked).value;
-            var multipleQty = qty*2;
-            document.getElementById(clicked).value = multipleQty;
-            $.ajax({
-                type: "POST",
-                url: 'scaleUpQty',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "True" },
-                success: function callback(response){
-                            console.log(response);
-                         }
-             });
-        }
-
-        function ScaleDownQty(clicked){
-            let qty = document.getElementById(clicked).value;
-            if (qty > 1) {
-                var multipleQty = parseInt(qty/2);
-                document.getElementById(clicked).value = multipleQty;
-            } else {
-                return;
-            }
-            $.ajax({
-                type: "POST",
-                url: 'scaleDownQty',
-                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: multipleQty, isFromAlgoTest: "True" },
-                success: function callback(response){
-                            console.log(response);
-                         }
-             });
-        }
-
         function startAlgo(clicked){
 
             var scriptQty1 = parseInt(document.getElementById(clicked).value);
