@@ -1,7 +1,10 @@
 # Byte-compiled / optimized / DLL files
 *__pycache__/
 *.py[cod]
+env/
+env
 
+.env
 # Distribution / packaging
 bin/
 build/
