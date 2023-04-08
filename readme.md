@@ -1,2 +1,2 @@
 here flow is like this 
-first loging page is index.html()
+first loging page is index.html(index view) then it wil be redirected to kite though which user will be authenticated and retured requets_token in get request on vire loginUser, so we got the request token that we will set it to this project by kite .generate session
