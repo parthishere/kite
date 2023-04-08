@@ -36,7 +36,6 @@ from selenium.webdriver.common.by import By
 import time
 import pyotp
 
-
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
 
 manualWatchlistArray = []
@@ -54,7 +53,7 @@ timeToStart = 0.0
 # =========================
 
 
-def index(request: HttpRequest):
+def index(request: HttpRequest):    
     return render(request, 'index.html', context={'api_key': KITE_API_KEY})
 
 
@@ -107,7 +106,7 @@ def home(request):
     if kite.access_token is None:
         return redirect("/")
 
-    TimeObjData = DateTimeCheck.objects.all()
+    TimeObjData = DateTimeCheck.objects.all()    
     if TimeObjData.exists():
         TimeObj = TimeObjData.first()
         todayDate = (datetime.now() + timedelta(hours=5, minutes=30)).date()
@@ -136,7 +135,7 @@ def loginWithZerodha(request):
 
 def loginUser(request):
     if request.method == 'GET':
-        if request.GET['request_token'] != "":
+        if 'request_token' in request.GET and request.GET['request_token'] != "":
             data = kite.generate_session(
                 request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
             kite.set_access_token(data["access_token"])
@@ -144,6 +143,8 @@ def loginUser(request):
             startLiveConnection(str(kite.access_token))
             coreLogic()
             return redirect('Home')
+        else:
+            return HttpResponse("Key does not exist!")
 
 
 def algowatch(request):
