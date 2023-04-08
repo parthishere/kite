@@ -1,0 +1,180 @@
+Below are all Algo API list
+
+1)Login
+http://127.0.0.1:8000/api/login
+Method: POST
+
+Response
+-------
+[
+{
+	"status": 'success'
+	"token": "-------"
+}]
+
+2) Algo Watch Page
+Method = GET
+api: http://127.0.0.1:8000/api/algowatchs
+
+Response
+--------
+[
+  {
+    "id": "001",
+    "time": "09:10:50",
+    "instruments": "INDGOPNTS",
+    "open": "1000.8",
+    "high": "1000.8",
+    "low": "1040",
+    "close": "1054.9",
+    "entry": "1055.0",
+    "ltp": "1043.05",
+    "slHit": "2",
+    "qty": "2",
+    "scalUp": "1",
+    "scalDown": "1",
+    "action": "start_algo",
+    "delete": "1"
+  }
+]
+
+
+
+ 3) Manual Watchs
+ Url = http://127.0.0.1:8000/api/manualwatchs
+ Method = GET
+
+ Response
+ ---------
+ [
+  {
+    "id": "001",
+    "time": "09:10:50",
+    "instruments": "INDGOPNTS",
+    "open": "1000.8",
+    "high": "1000.8",
+    "low": "1040",
+    "close": "1054.9",
+    "entry": "1055.0",
+    "ltp": "1043.05",
+    "slHit": "2",
+    "qty": "2",
+    "scalUp": "1",
+    "scalDown": "1",
+    "action": "start_algo",
+    "delete": "1"
+  }
+ ]
+
+
+ 4) Orders
+ URL: http://127.0.0.1:8000/api/orders
+ Method = GET
+
+ Response
+ ---------
+ [
+   {
+    "id": "001",
+    "time": "2023-03-17 09:10:50",
+    "orderType": "SELL",
+    "type": "MIS",
+    "instruments": "INDGOPNTS",
+    "qty": "2",
+    "status": "complete",
+    "price": "1055.55"
+  }
+ ]
+
+
+ 5)Positions
+ URL: http://127.0.0.1:8000/api/positions
+ Method: GET
+
+ Response
+ --------
+ [
+ {
+    "id": "001",
+    "instruments": "INDGOPNTS",
+    "type": "SELL",
+    "qty": "2",
+    "entry": "1040",
+    "ltp": "1054.19",
+    "average": "1055.0",
+    "exit": "closed",
+    "actions": "closed",
+    "pnl": "1.95",
+    "per": "0.95 %"
+  }
+ ]
+
+
+ 6) Settings
+ URL = http://127.0.0.1:8000/api/settings
+ Method = POST
+
+Parameter = “{
+        "time":"09:14:50",
+        "stoploss":0.05,
+        "target":2.0,
+        "scaleupqty":1,
+        "scaledownqty":1,
+        "openingrange":0.05,
+        "openingrangebox":""
+        }  “
+
+
+ 7) Start Algo
+ URL: http://127.0.0.1:8000/api/startAlgo
+ Method = POST
+
+ 8) Stop Algo
+ URL: http://127.0.0.1:8000/api/stopAlgo
+ Method = POST
+
+ 9) Half Algo
+ URL: http://127.0.0.1:8000/api/halfAlgo
+ Method = POST
+
+10) Start all
+ URL: http://127.0.0.1:8000/api/startAll
+ Method = POST
+
+11) Buy single
+ URL: http://127.0.0.1:8000/api/buySingle
+ Method = POST
+ Parameter = “two script from database one is script,second one is scriptQty”
+
+12) Sell single
+ URL: http://127.0.0.1:8000/api/sellSingle
+ Method = POST
+ Parameter = “two script from database one is script,second one is scriptQty”
+
+13) Scale UpQty
+ URL: http://127.0.0.1:8000/api/scaleUpQty
+ Method = POST
+ Parameter = “two script from database one is script,second one is scriptQty”
+
+14) Scale DownQty
+ URL: http://127.0.0.1:8000/api/scaleDownQty
+ Method = POST
+ Parameter = “two script from database one is script,second one is scriptQty”
+
+15) Search stok
+URL: http://127.0.0.1:8000/api/searchBykeywordStock
+Method = POST
+Parameter: key word
+
+16) Add Instrument
+URL: http://127.0.0.1:8000/api/addInstrument
+Method = POST
+
+17) Delete Instrument
+URL: http://127.0.0.1:8000/api/deleteInstrument
+Method = POST
+
+18) Logout
+Url = http://127.0.0.1:8000/api/stopAlgo
+Method = POST
+Parameter = “script form database ”
