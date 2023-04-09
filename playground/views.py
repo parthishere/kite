@@ -147,7 +147,7 @@ def loginUser(request):
             return HttpResponse("Key does not exist!")
 
 
-def algowatch(request):
+def algowatch(request):    
     logging.warning('Access token in algowatch===== %s', kite.access_token)
     # Return to home page is user is not loggedin using Zerodha
     if kite.access_token is None:
@@ -156,8 +156,7 @@ def algowatch(request):
     positionArray = getPositions()
     totalPNL = total_pnl() or 0
     algoWatchlistArray = AlgoWatchlist.objects.all()
-    allInstruments = list(Instruments.objects.all(
-    ).values_list('tradingsymbol', flat=True))
+    allInstruments = list(Instruments.objects.all().values_list('tradingsymbol', flat=True))
     return render(request, 'algowatch.html', {'allInstruments': allInstruments, 'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL})
 
 

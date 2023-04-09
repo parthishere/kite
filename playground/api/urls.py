@@ -1,10 +1,10 @@
 from . import views
-from django.urls import path
+from django.urls import path,re_path
 
 urlpatterns = [
-    path("login/", views.login_view, name="api-login-view"),
-    path("autologin/", views.login_with_zerodha,name="Autologin"),
-
+    path("login/", views.login_view, name="api-login-view"),    
+    re_path(r'algowatch/$', views.algowatch,name="algowatch"),
+    re_path(r'orders/$', views.OrdersApi,name="ordersapi"),
     # path("algowatch",  algowatch,name="Algowatch"),
     # path("manualwatch",  manualwatch, name="Manualwatch"),
     # path("orders",  orders, name="Orders"),
