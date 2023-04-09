@@ -7,8 +7,9 @@ import threading
 import logging
 from ..views import coreLogic, getPositions, total_pnl,login_in_zerodha, getOrders
 import pyotp
-from ..models import AlgoWatchlist,Instruments, ManualWatchlist
+from ..models import AlgoWatchlist,Instruments, ManualWatchlist, Preferences
 from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer
+import datetime
 
 kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
@@ -41,8 +42,8 @@ def login_with_zerodha(request):
 @api_view(["GET"])
 def algowatch(request):
         
-    if kite.access_token is None:
-        return redirect("/")
+    # if kite.access_token is None:
+    #     return redirect("/")
     positionArray = getPositions()
     totalPNL = total_pnl() or 0
     algoWatchlistArray = AlgoWatchlist.objects.all()
@@ -52,9 +53,8 @@ def algowatch(request):
 
 @api_view(["GET"])
 def manualwatch(request):
-    logging.warning('Access token in manualwatch===== %s', kite.access_token)
-    if kite.access_token is None:
-        return redirect("/")
+    # if kite.access_token is None:
+    #     return redirect("/")
     positionArray = getPositions()
     totalPNL = total_pnl()
     manualWatchlistArray = ManualWatchlist.objects.all()
@@ -72,3 +72,39 @@ def orders(request):
     ordersArray = getOrders()
 
     return Response({'orderArrayList': ordersArray})
+
+
+@api_view(["GET", "POST"])
+def settings_view(request):
+    if kite.access_token is None:
+        return redirect("/")
+    
+    if request.method == "GET":
+        if Preferences.objects.filter(scriptName="Default").exists():
+            obj = Preferences.objects.filter(scriptName="Default")
+            serializer = PreferencesSerializer(obj).data
+        else:
+            return Response({"status":406, "data":{"error": "No Default settings found, create settings first"}})
+        return Response(serializer)
+    
+    if request.method == "POST":
+        time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
+        stoploss = request.POST.get('stoploss')
+        target = request.POST.get('target')
+        scaleupqty = request.POST.get('scaleupqty')
+        scaledownqty = request.POST.get('scaledownqty')
+        openingrange = request.POST.get('openingrange')
+        openingrangebox = request.POST.get('openingrangebox')
+        try:
+            if Preferences.objects.filter(scriptName="Default").exists():
+                Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
+                                                                        scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+            else:
+                settings = Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
+                                    scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+                settings.save()
+                
+        except:
+            return Response({"status": "500" ,"data": {"error":"Some error occured while saving the object on server"}})
+        return Response({"status":200, 'data': "updated/created"})
+   

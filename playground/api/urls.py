@@ -2,13 +2,13 @@ from . import views
 from django.urls import path
 
 urlpatterns = [
-    path("login/", views.login_view, name="api-login-view"),
-    path("autologin/", views.login_with_zerodha,name="Autologin"),
+    path("login/", views.login_view, name="API-login-view"),
+    path("autologin/", views.login_with_zerodha,name="API-Autologin"),
 
-    path("algowatch", algowatch,name="Algowatch"),
-    path("manualwatch",  manualwatch, name="Manualwatch"),
-    path("orders",  orders, name="Orders"),
-    # path("settings",  api_settings, name="Settings"),
+    path("algowatch", views.algowatch,name="API-Algowatch"),
+    path("manualwatch",  views.manualwatch, name="API-Manualwatch"),
+    path("orders",  views.orders, name="API-Orders"),
+    path("settings",  views.settings_view, name="API-Settings"),
     # path("logout",  logoutUser, name="Logout"),
 
     # #Ajax function to call from script to view
