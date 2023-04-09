@@ -7,6 +7,7 @@ import threading
 from ..views import coreLogic,login_in_zerodha,getPositions, total_pnl
 import pyotp
 from ..models import AlgoWatchlist,Instruments, ManualWatchlist, Orders, Preferences
+from .. import models 
 from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer,OrderSerializer
 from datetime import datetime
 
