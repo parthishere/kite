@@ -4,11 +4,11 @@ from django.shortcuts import render, redirect
 from kiteconnect import KiteConnect
 from django.conf import settings
 import threading
-import logging
-from ..views import coreLogic,login_in_zerodha
+from ..views import coreLogic,login_in_zerodha,getPositions, total_pnl
 import pyotp
-from ..models import AlgoWatchlist,Instruments, ManualWatchlist
-from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer
+from ..models import AlgoWatchlist,Instruments, ManualWatchlist, Orders, Preferences
+from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer,OrderSerializer
+from datetime import datetime
 
 kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
@@ -19,12 +19,17 @@ kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
 @api_view(["GET"])
 def login_view(request):    
-        if 'request_token' in request.GET and request.GET.get('request_token'):
+    if 'request_token' in request.GET and request.GET.get('request_token'):
+        try:
             data = kite.generate_session(
                 request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
             kite.set_access_token(data["access_token"])
-            coreLogic()
-            return Response({'Data':"good"})    
+        except Exception as e:
+            return Response({"Error": f"Something wrong happed, Error {e}"})
+        coreLogic()
+        return Response({'Data':"Login Successful"})   
+    else:
+        return Response({"Error": "No request token found in callback url"}) 
 
 @api_view(['GET'])
 def login_with_zerodha(request):            
@@ -39,8 +44,8 @@ def login_with_zerodha(request):
 @api_view(["GET"])
 def algowatch(request):
         
-    # if kite.access_token is None:
-    #     return redirect("/")
+    if kite.access_token is None:
+        return redirect("/")
     positionArray = getPositions()
     totalPNL = total_pnl() or 0
     algoWatchlistArray = AlgoWatchlist.objects.all()
@@ -50,8 +55,8 @@ def algowatch(request):
 
 @api_view(["GET"])
 def manualwatch(request):
-    # if kite.access_token is None:
-    #     return redirect("/")
+    if kite.access_token is None:
+        return redirect("/")
     positionArray = getPositions()
     totalPNL = total_pnl()
     manualWatchlistArray = ManualWatchlist.objects.all()
@@ -62,8 +67,8 @@ def manualwatch(request):
 
 @api_view(['GET'])
 def OrdersApi(reqeust):
-       orders_qs = models.Orders.objects.all()
-       order_json = serializers.OrderSerializer(orders_qs,many=True).data
+       orders_qs = Orders.objects.all()
+       order_json = OrderSerializer(orders_qs,many=True).data
        return Response(order_json)
 
 
