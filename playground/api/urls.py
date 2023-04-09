@@ -4,7 +4,7 @@ from django.urls import path
 urlpatterns = [
     path("login/", login_view, name="api-login-view"),
 
-    # path("algowatch",  algowatch,name="Algowatch"),
+    path("algowatch", algowatch,name="Algowatch"),
     # path("manualwatch",  manualwatch, name="Manualwatch"),
     # path("orders",  orders, name="Orders"),
     # path("settings",  api_settings, name="Settings"),

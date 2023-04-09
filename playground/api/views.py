@@ -4,8 +4,10 @@ from django.shortcuts import render, redirect
 from kiteconnect import KiteConnect
 from django.conf import settings
 import threading
-from ..views import coreLogic
+from ..views import coreLogic, getPositions, total_pnl
 from .. import constants
+from ..models import AlgoWatchlist,Instruments
+from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer
 
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
 
@@ -29,3 +31,16 @@ def login_view(request):
 
 
     return Response({"Data":"data"})
+
+@api_view(["GET"])
+def algowatch(request):
+    # if request.medthod == "POST":
+    
+    if kite.access_token is None:
+        return redirect("/")
+    positionArray = getPositions()
+    totalPNL = total_pnl() or 0
+    algoWatchlistArray = AlgoWatchlist.objects.all()
+    allInstruments = list(Instruments.objects.all(
+    ).values_list('tradingsymbol', flat=True))
+    return Response({'allInstruments': allInstruments, 'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL})
