@@ -6,8 +6,8 @@ urlpatterns = [
     path("autologin/", views.login_with_zerodha,name="Autologin"),
 
     path("algowatch", algowatch,name="Algowatch"),
-    # path("manualwatch",  manualwatch, name="Manualwatch"),
-    # path("orders",  orders, name="Orders"),
+    path("manualwatch",  manualwatch, name="Manualwatch"),
+    path("orders",  orders, name="Orders"),
     # path("settings",  api_settings, name="Settings"),
     # path("logout",  logoutUser, name="Logout"),
 
