@@ -1,15 +1,14 @@
 from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework.response import Response    
 from django.shortcuts import render, redirect
 from kiteconnect import KiteConnect
 from django.conf import settings
 import threading
 import logging
-from ..views import coreLogic, getPositions, total_pnl,login_in_zerodha, getOrders
+from ..views import coreLogic,login_in_zerodha
 import pyotp
-from ..models import AlgoWatchlist,Instruments, ManualWatchlist, Preferences
+from ..models import AlgoWatchlist,Instruments, ManualWatchlist
 from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer
-import datetime
 
 kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
@@ -20,14 +19,12 @@ kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
 @api_view(["GET"])
 def login_view(request):    
-    if request.GET.get('request_token'):
-        data = kite.generate_session(
-            request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
-        kite.set_access_token(data["access_token"])
-        coreLogic()
-        return Response({'Data':"good"})  
-    else:
-        return Response({"Data": "Bad"})  
+        if 'request_token' in request.GET and request.GET.get('request_token'):
+            data = kite.generate_session(
+                request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
+            kite.set_access_token(data["access_token"])
+            coreLogic()
+            return Response({'Data':"good"})    
 
 @api_view(['GET'])
 def login_with_zerodha(request):            
@@ -63,15 +60,11 @@ def manualwatch(request):
     return Response({'allInstruments': allInstruments, 'manualWatchlistArray': manualWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL})
 
 
-def orders(request):
-
-    logging.warning('Access token in orders===== %s', kite.access_token)
-    if kite.access_token is None:
-        return redirect("/")
-
-    ordersArray = getOrders()
-
-    return Response({'orderArrayList': ordersArray})
+@api_view(['GET'])
+def OrdersApi(reqeust):
+       orders_qs = models.Orders.objects.all()
+       order_json = serializers.OrderSerializer(orders_qs,many=True).data
+       return Response(order_json)
 
 
 @api_view(["GET", "POST"])
@@ -107,4 +100,6 @@ def settings_view(request):
         except:
             return Response({"status": "500" ,"data": {"error":"Some error occured while saving the object on server"}})
         return Response({"status":200, 'data': "updated/created"})
-   
+
+       
+
