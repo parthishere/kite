@@ -14,6 +14,7 @@ urlpatterns = [
     path("login/", views.login_view, name="api-login-view"),    
     re_path(r'algowatch/$', views.algowatch,name="algowatch"),
     re_path(r'orders/$', views.OrdersApi,name="ordersapi"),
+    re_path(r'positions/$', views.PositionsApi,name="positionsapi"),
     # path("algowatch",  algowatch,name="Algowatch"),
     # path("manualwatch",  manualwatch, name="Manualwatch"),
     # path("orders",  orders, name="Orders"),

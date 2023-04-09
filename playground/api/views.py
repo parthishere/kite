@@ -71,40 +71,8 @@ def OrdersApi(reqeust):
        order_json = OrderSerializer(orders_qs,many=True).data
        return Response(order_json)
 
-
-@api_view(["GET", "POST"])
-def settings_view(request):
-    if kite.access_token is None:
-        return redirect("/")
-    
-    if request.method == "GET":
-        if Preferences.objects.filter(scriptName="Default").exists():
-            obj = Preferences.objects.filter(scriptName="Default")
-            serializer = PreferencesSerializer(obj).data
-        else:
-            return Response({"status":406, "data":{"error": "No Default settings found, create settings first"}})
-        return Response(serializer)
-    
-    if request.method == "POST":
-        time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
-        stoploss = request.POST.get('stoploss')
-        target = request.POST.get('target')
-        scaleupqty = request.POST.get('scaleupqty')
-        scaledownqty = request.POST.get('scaledownqty')
-        openingrange = request.POST.get('openingrange')
-        openingrangebox = request.POST.get('openingrangebox')
-        try:
-            if Preferences.objects.filter(scriptName="Default").exists():
-                Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
-                                                                        scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
-            else:
-                settings = Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
-                                    scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
-                settings.save()
-                
-        except:
-            return Response({"status": "500" ,"data": {"error":"Some error occured while saving the object on server"}})
-        return Response({"status":200, 'data': "updated/created"})
-
-       
-
+@api_view(['GET'])
+def PositionsApi(reqeust):
+       positions_qs = models.Positions.objects.all()
+       positions_json = serializers.PositionsSerializer(positions_qs,many=True).data
+       return Response(positions_json)
