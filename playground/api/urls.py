@@ -3,6 +3,12 @@ from django.urls import path,re_path
 
 urlpatterns = [
     path("login/", views.login_view, name="api-login-view"),    
+    path("login/", views.login_view, name="API-login-view"),
+    path("autologin/", views.login_with_zerodha,name="API-Autologin"),
+    path("algowatch", views.algowatch,name="API-Algowatch"),
+    path("manualwatch",  views.manualwatch, name="API-Manualwatch"),
+    path("orders",  views.orders, name="API-Orders"),
+    path("settings",  views.settings_view, name="API-Settings"), 
     re_path(r'algowatch/$', views.algowatch,name="algowatch"),
     re_path(r'orders/$', views.OrdersApi,name="ordersapi"),
     re_path(r'positions/$', views.PositionsApi,name="positionsapi"),
