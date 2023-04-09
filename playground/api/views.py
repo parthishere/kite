@@ -38,3 +38,9 @@ def OrdersApi(reqeust):
        orders_qs = models.Orders.objects.all()
        order_json = serializers.OrderSerializer(orders_qs,many=True).data
        return Response(order_json)
+
+@api_view(['GET'])
+def PositionsApi(reqeust):
+       positions_qs = models.Positions.objects.all()
+       positions_json = serializers.PositionsSerializer(positions_qs,many=True).data
+       return Response(positions_json)
