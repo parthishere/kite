@@ -15,11 +15,11 @@ coreRunning = False
 
 kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
-@api_view(["POST"])
+@api_view(["GET"])
 def login_view(request):    
-        if 'request_token' in request.POST and request.POST.get('request_token'):
+        if 'request_token' in request.GET and request.GET.get('request_token'):
             data = kite.generate_session(
-                request.POST['request_token'], api_secret=settings.KITE_API_SECRET)
+                request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
             kite.set_access_token(data["access_token"])
             coreLogic()
             return Response({'Data':"good"})    
