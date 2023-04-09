@@ -6,12 +6,12 @@ class PreferencesSerializer(serializers.ModelSerializer):
         model=Preferences
         field = "__all__"
         
-class PreferencesSerializer(serializers.ModelSerializer):
+class AlgoWatchlistSerializer(serializers.ModelSerializer):
     class Meta:
         model=Preferences
         field = "__all__"
         
-class PreferencesSerializer(serializers.ModelSerializer):
+class InstrumentsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Preferences
         field = "__all__"
