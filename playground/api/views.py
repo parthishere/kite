@@ -4,33 +4,36 @@ from django.shortcuts import render, redirect
 from kiteconnect import KiteConnect
 from django.conf import settings
 import threading
-from ..views import coreLogic, getPositions, total_pnl
-from .. import constants
+import logging
+from ..views import coreLogic, getPositions, total_pnl,login_in_zerodha
+import pyotp
 from ..models import AlgoWatchlist,Instruments
 from .serializers import AlgoWatchlistSerializer, PreferencesSerializer, InstrumentsSerializer
 
-kite = KiteConnect(api_key=constants.KITE_API_KEY)
+kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
 coreLogicLock = threading.Lock()
 coreRunning = False
 
-kite = KiteConnect(api_key=constants.KITE_API_KEY)
+kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
-@api_view(["POST", "GET"])
-def login_view(request):
-    # if request.medthod == "POST":
-    
-    if request.method == 'GET':
-        if request.GET['request_token'] != "":
-            print(request.GET['request_token'])
+@api_view(["GET"])
+def login_view(request):    
+        if 'request_token' in request.GET and request.GET.get('request_token'):
             data = kite.generate_session(
-                request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
+                request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
             kite.set_access_token(data["access_token"])
             coreLogic()
-            return Response({'Data':"good"})
+            return Response({'Data':"good"})    
 
-
-    return Response({"Data":"data"})
+@api_view(['GET'])
+def login_with_zerodha(request):            
+        topt = pyotp.TOTP('ZF3MONJ23XF34ESGSGRXOKR6RGTRQLXN')
+        toptKey = topt.now()        
+        kite = login_in_zerodha(settings.KITE_API_KEY, settings.KITE_API_SECRET, 'LN7447', 'zzzzaaaa', toptKey)
+        profile = kite.profile()
+        print(profile)
+        return ("success")
 
 @api_view(["GET"])
 def algowatch(request):

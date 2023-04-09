@@ -34,8 +34,8 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
-KITE_API_KEY = os.environ["KITE_API_KEY"]
-KITE_API_SECRET = os.environ["KITE_API_SECRET"]
+KITE_API_KEY = os.getenv("KITE_API_KEY")
+KITE_API_SECRET = os.getenv("KITE_API_SECRETE")
 
 # Application definition
 
