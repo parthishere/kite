@@ -42,12 +42,6 @@ def login_view(request):
         return Response({"Data": "Not good"})
 
 
-@api_view(['GET'])
-def algowatch(request):        
-    algowatchlist = models.AlgoWatchlist.objects.all()
-    for obj in algowatchlist:
-            print(obj)
-    return Response("No Response")
        
 def login_with_zerodha(request):            
     topt = pyotp.TOTP('ZF3MONJ23XF34ESGSGRXOKR6RGTRQLXN')
