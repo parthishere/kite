@@ -2,7 +2,6 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response  
 from rest_framework.views import APIView
 from django.shortcuts import render, redirect
-from kiteconnect import KiteConnect
 from django.conf import settings
 import threading
 import logging
@@ -19,20 +18,21 @@ import json
 from .. import constants
 from .. import consumers
 
+from kiteconnect import KiteConnect
 
+kite = views.kite
 
 coreLogicLock = threading.Lock()
 coreRunning = False
 
-kite = KiteConnect(api_key=constants.KITE_API_KEY)
+
 
 @api_view(["GET"])
 def login_view(request):    
     if request.GET.get('request_token'):
-        kite=KiteConnect(api_key=constants.KITE_API_KEY)
-        data = kite.generate_session(
-        request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
         
+        data = kite.generate_session(
+            request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
         kite.set_access_token(data["access_token"])
         logging.warning("Access token===== %s", data["access_token"])
         consumers.startLiveConnection(str(kite.access_token))
@@ -40,6 +40,7 @@ def login_view(request):
         return Response({'Data':"good"})    
     else:
         return Response({"Data": "Not good"})
+
 
 @api_view(['GET'])
 def algowatch(request):        

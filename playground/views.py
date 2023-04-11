@@ -36,6 +36,7 @@ from selenium.webdriver.common.by import By
 import time
 import pyotp
 
+
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
 
 manualWatchlistArray = []

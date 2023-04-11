@@ -14,6 +14,7 @@ from pathlib import Path
 import dotenv
 from django.contrib.messages import constants as messages
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -36,6 +37,8 @@ ALLOWED_HOSTS = ['*']
 
 KITE_API_KEY = os.getenv("KITE_API_KEY")
 KITE_API_SECRET = os.getenv("KITE_API_SECRET")
+
+
 
 # Application definition
 
