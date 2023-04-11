@@ -16,6 +16,7 @@ import pyotp
 from .. import models
 from . import serializers
 import json
+from .. import constants
 
 kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
@@ -26,22 +27,23 @@ kite = KiteConnect(api_key=settings.KITE_API_KEY)
 
 @api_view(["GET"])
 def login_view(request):    
-    if 'request_token' in request.GET and request.GET.get('request_token'):
-        try:
-            data = kite.generate_session(
-                request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
-            kite.set_access_token(data["access_token"])
-        except Exception as e:
-            Response({'Data':"not good"}) 
-        views.coreLogic()
+    if request.GET.get('request_token'):
+        data = kite.generate_session(
+        request.GET['request_token'], api_secret=settings.KITE_API_SECRETE)
+        kite.set_access_token(data["access_token"])
+        logging.warning("Access token===== %s", data["access_token"])
+        views.startLiveConnection(str(kite.access_token))
+        coreLogic()
         return Response({'Data':"good"})    
+    else:
+        return Response({"Data": "Not good"})
 
 @api_view(['GET'])
 def algowatch(request):        
-        algowatchlist = models.AlgoWatchlist.objects.all()
-        for obj in algowatchlist:
-               print(obj)
-        return Response("No Response")
+    algowatchlist = models.AlgoWatchlist.objects.all()
+    for obj in algowatchlist:
+            print(obj)
+    return Response("No Response")
        
 def login_with_zerodha(request):            
     topt = pyotp.TOTP('ZF3MONJ23XF34ESGSGRXOKR6RGTRQLXN')
