@@ -132,7 +132,6 @@ def loginWithZerodha(request):
     print(kiteobj.profile())
     return HttpResponse("success")
 
-
 def loginUser(request):
     if request.method == 'GET':
         if 'request_token' in request.GET and request.GET['request_token'] != "":

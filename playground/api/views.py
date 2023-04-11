@@ -17,22 +17,25 @@ from .. import models
 from . import serializers
 import json
 from .. import constants
+from .. import consumers
 
-kite = KiteConnect(api_key=settings.KITE_API_KEY)
+
 
 coreLogicLock = threading.Lock()
 coreRunning = False
 
-kite = KiteConnect(api_key=settings.KITE_API_KEY)
+kite = KiteConnect(api_key=constants.KITE_API_KEY)
 
 @api_view(["GET"])
 def login_view(request):    
     if request.GET.get('request_token'):
+        kite=KiteConnect(api_key=constants.KITE_API_KEY)
         data = kite.generate_session(
-        request.GET['request_token'], api_secret=settings.KITE_API_SECRETE)
+        request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
+        
         kite.set_access_token(data["access_token"])
         logging.warning("Access token===== %s", data["access_token"])
-        views.startLiveConnection(str(kite.access_token))
+        consumers.startLiveConnection(str(kite.access_token))
         coreLogic()
         return Response({'Data':"good"})    
     else:
@@ -57,8 +60,8 @@ def login_with_zerodha(request):
 @api_view(["GET"])
 def algowatch(request):
         
-    # if kite.access_token is None:
-    #     return redirect("/")
+    if kite.access_token is None:
+        return redirect("/")
     positionArray = views.getPositions()
     totalPNL = views.total_pnl() or 0
     algoWatchlistArray = models.AlgoWatchlist.objects.all()
@@ -68,8 +71,8 @@ def algowatch(request):
 
 @api_view(["GET"])
 def manualwatch(request):
-    # if kite.access_token is None:
-    #     return redirect("/")
+    if kite.access_token is None:
+        return redirect("/")
     positionArray = views.getPositions()
     totalPNL = views.total_pnl()
     manualWatchlistArray = models.ManualWatchlist.objects.all()
@@ -301,3 +304,13 @@ class DeleteInstrumentAPI(APIView):
         except Exception as e:
             response = {'error':0,'status':str(e)}
             return Response(json.dumps(response))
+
+
+
+
+
+
+
+## Error
+
+
