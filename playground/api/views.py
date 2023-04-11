@@ -83,13 +83,14 @@ def OrdersApi(reqeust):
 
 @api_view(["GET", "POST"])
 def settings_view(request):
+    print(kite.access_token)
     if kite.access_token is None:
         return redirect("/")
-    
+    print("HERE")
     if request.method == "GET":
         if models.Preferences.objects.filter(scriptName="Default").exists():
             obj = models.Preferences.objects.filter(scriptName="Default")
-            serializer = models.PreferencesSerializer(obj).data
+            serializer = serializers.PreferencesSerializer(obj).data
         else:
             return Response({"status":406, "data":{"error": "No Default settings found, create settings first"}})
         return Response(serializer)
