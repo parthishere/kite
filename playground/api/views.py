@@ -49,7 +49,7 @@ def logoutUser(request):
 
 
 @api_view(["GET"])
-def login_check_view(request):   
+def login_check_viewlogin_check_view(request):   
     if kite.access_token: 
         return Response({'Data':"User Authenticated"})    
     else:
@@ -334,7 +334,7 @@ class ScaleDownQtyAPI(APIView):
             response['status'] = str(e)
             return Response(json.dumps(response))
 
-
+## Ahithi baki 6e API banavva ni
 class AddInstrumentAPI(APIView):
     def post(self,request):
         response = {'error':0,'status':''}
