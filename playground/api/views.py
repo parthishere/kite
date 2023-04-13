@@ -49,7 +49,7 @@ def logoutUser(request):
 
 
 @api_view(["GET"])
-def login_check_viewlogin_check_view(request):   
+def login_check_view(request):   
     if kite.access_token: 
         return Response({'Data':"User Authenticated"})    
     else:
@@ -136,7 +136,7 @@ class SettingsView(RetrieveUpdateAPIView):
     #     return Response({"status":200, 'data': "updated/created"})
 
 @api_view(['GET'])
-def PositionsApi(reqeust):
+def PositionsModelApi(reqeust):
        positions_qs = models.Positions.objects.all()
        positions_json = serializers.PositionsSerializer(positions_qs,many=True).data
        return Response(positions_json)
@@ -158,7 +158,7 @@ class StartAlgoSingleAPI(APIView):
             instruments_quantity = request.POST.get("instrumentQuantity")    
             # print("Came from JS to start" + params['instruments'])            
             models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-            models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=int(instruments_quantity))        
+            models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)        
             response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
@@ -188,7 +188,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                 models.AlgoWatchlist.objects.filter(
                     instruments=instruments_name).update(startAlgo=False)
                 models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(
-                    qty=int(instruments_quantity))
+                    qty=instruments_quantity)
             else:
                 print("Stop Single from Manualwatchlist")
                 models.ManualWatchlist.objects.filter(
@@ -198,7 +198,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                 models.ManualWatchlist.objects.filter(
                     instruments=instruments_name).update(isBuyClicked=False)
                 models.ManualWatchlist.objects.filter(instruments=instruments_name).update(
-                    qty=int(instruments_quantity)) 
+                    qty=instruments_quantity)
                        
             response['status'] = 'success'
             return Response(json.dumps(response))
@@ -220,7 +220,7 @@ class StartAllAPI(APIView):
             for items in algo_array:
                 print("Starting for all items: ", items.instruments)
                 models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(startAlgo=True)
-                models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=int(instruments_quantity))
+                models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=instruments_quantity)
             response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
@@ -244,7 +244,7 @@ class BuySingleManualAPI(APIView):
             
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="BUY")
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=int(instruments_quantity))
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isBuyClicked=True)            
             response['status'] = 'success'
             return Response(json.dumps(response))
@@ -270,7 +270,7 @@ class SellSingle(APIView):
 
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="SELL")
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=int(instruments_quantity))
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isSellClicked=True)            
             response['status'] = 'success'
             return Response(json.dumps(response))
@@ -363,6 +363,9 @@ class AddInstrumentAPI(APIView):
             return Response(json.dumps(response))
             
 class DeleteInstrumentAPI(APIView):
+    """
+    Will Delete the instruments
+    """
     def post(self,request):
         response = {'error':0,'status':''}
         try:
@@ -383,9 +386,112 @@ class DeleteInstrumentAPI(APIView):
             return Response(json.dumps(response))
 
 
+def position_exists(tradingsymbol):
+    return models.Positions.objects.filter(instruments=tradingsymbol).exists()
 
 
+# @api_view(["GET"])
+# def getPositions():
+#     """
+#         get live positions
+#     """
+#     positionsdict = kite.positions()
+#     consumers.updatePostions(positionsdict)
+#     positions = positionsdict['net']
+#     entryPrice = 0.0
 
+#     # print(positions)
+#     if len(positions) > 0:
+#         # if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
+#         for position in positions:
+#             # print("Checking postion for " + position['tradingsymbol'])
+#             if (l_data := consumers.liveData.get(position['tradingsymbol'])):
+#                 pnl = (position['sell_value'] - position['buy_value']) + \
+#                     (position['quantity'] * l_data['LTP']
+#                      * position['multiplier'])
+#             else:
+#                 pnl = position['pnl']
+
+#             # For Open Buy position
+#             if int(position['quantity']) > 0:
+#                 # print("Checking for buy postion " + position['tradingsymbol'])
+
+#                 if models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
+#                     models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+#                         openPostion=True, startAlgo=True, positionType="BUY", isBuyClicked=False, isSellClicked=False)  # qty=position['quantity']
+#                     entryPrice = float(models.ManualWatchlist.objects.filter(
+#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
+#                 elif models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']):
+#                     models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+#                         openPostion=True, startAlgo=True)
+#                     entryPrice = float(models.AlgoWatchlist.objects.filter(
+#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
+
+#                 if not position_exists(position['tradingsymbol']):
+#                     # Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
+#                     positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], avgTradedPrice=round(
+#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+#                     positionObject.save()
+#                     views.getPositionAndUpdateModels(
+#                         ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="BUY")
+#                 else:
+#                     # print("Updating New Buy Positions")
+#                     views.getPositionAndUpdateModels(
+#                         ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="BUY")
+#                     models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(
+#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+
+#             # For Open sell position
+#             if int(position['quantity']) < 0:
+#                 # print("Checking for Sell postion " + position['tradingsymbol'])
+#                 setQty = abs(position['quantity'])
+
+#                 if models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
+#                     models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+#                         openPostion=True, startAlgo=True, positionType="SELL", isBuyClicked=False, isSellClicked=False)  # , qty=setQty
+#                     entryPrice = float(models.ManualWatchlist.objects.filter(
+#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
+#                 elif models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']):
+#                     models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+#                         openPostion=True, startAlgo=True)
+#                     entryPrice = float(models.AlgoWatchlist.objects.filter(
+#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
+
+#                 if not position_exists(position['tradingsymbol']):
+#                     # Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
+#                     positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], avgTradedPrice=round(
+#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+#                     positionObject.save()
+#                     views.getPositionAndUpdateModels(
+#                         ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="SELL")
+#                 else:
+#                     # print("Updating New Sell Positions")
+#                    views.getPositionAndUpdateModels(
+#                          ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="SELL")
+#                     models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(
+#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+
+#             # For Closed Positions
+#             if int(position['quantity']) == 0:
+#                 models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+#                     openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
+#                 models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+#                     openPostion=False, startAlgo=False)
+#                 # print("Checking for closed postion " + position['tradingsymbol'])
+#                 if not position_exists(position['tradingsymbol']):
+#                     positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], entryprice=0.0, avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
+#                         position['last_price'], 2), pnl=round(pnl, 3), unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
+#                     positionObject.save()
+#                 else:
+#                     # print("Updating New Positions")
+#                     models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
+#                         position['last_price'], 2), pnl=round(pnl, 3), unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
+#     # else:
+#     #     print("No postion available")
+
+#     positions_query =  models.Positions.objects.all()
+#     data = serializers.PositionsSerializer(positions_query, many=True).data
+#     return Response(data)
 
 
 ## Error
