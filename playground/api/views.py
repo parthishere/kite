@@ -160,11 +160,11 @@ class StartAlgoSingleAPI(APIView):
             models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
             models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)        
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
 
 
 class StopAlgoAndManualSingleAPI(APIView):
@@ -201,11 +201,11 @@ class StopAlgoAndManualSingleAPI(APIView):
                     qty=instruments_quantity)
                        
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
 
 class StartAllAPI(APIView):
     """ Send Inothing in the POST request
@@ -222,11 +222,11 @@ class StartAllAPI(APIView):
                 models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(startAlgo=True)
                 models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=instruments_quantity)
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
 
 class BuySingleManualAPI(APIView):
     """ Send Intrument name (TCS) and quantity  in the parameter POST 
@@ -247,11 +247,11 @@ class BuySingleManualAPI(APIView):
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isBuyClicked=True)            
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
         
         
 class SellSingle(APIView):
@@ -273,11 +273,11 @@ class SellSingle(APIView):
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
             models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isSellClicked=True)            
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
        
        
         
@@ -302,11 +302,11 @@ class ScaleUpQtyAPI(APIView):
             else:
                 models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)                
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
 
 class ScaleDownQtyAPI(APIView):
     """ Send Intrument name (TCS) and quantity  in the parameter POST 
@@ -328,11 +328,11 @@ class ScaleDownQtyAPI(APIView):
             else:
                 models.ManualWatchlist.objects.filter(instruments=script).update(qty=qty)
             response['status'] = 'success'
-            return Response(json.dumps(response))
+            return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(json.dumps(response))
+            return Response(response)
 
 ## Ahithi baki 6e API banavva ni
 class AddInstrumentAPI(APIView):
@@ -352,15 +352,15 @@ class AddInstrumentAPI(APIView):
                 instrumentObjectToManualWatchlistObject(instrumentObject)
                 manualWatchObject = models.ManualWatchlist.objects.filter(instruments=script).values()
                 response = {'error':0,'status':'success','instrument':list(manualWatchObject)}
-                return Response(json.dumps(response))                    
+                return Response(response)                    
             elif flag == "AlgoWatch":
                 instrumentObjectToAlgoWatchlistObject(instrumentObject)
                 algoWatchObject = models.AlgoWatchlist.objects.filter(instruments=script).values()
                 response = {'error':0,'status':'success','instrument':list(algoWatchObject)}
-                return Response(json.dumps(response))                   
+                return Response(response)                   
         except Exception as e:
             response = {'error':0,'status':str(e)}
-            return Response(json.dumps(response))
+            return Response(response)
             
 class DeleteInstrumentAPI(APIView):
     """
@@ -380,10 +380,10 @@ class DeleteInstrumentAPI(APIView):
             instumentData = instrumentObject[0]
             updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
             response = {'error':0,'status':'success'}
-            return Response(json.dumps(response))            
+            return Response(response)            
         except Exception as e:
             response = {'error':0,'status':str(e)}
-            return Response(json.dumps(response))
+            return Response(response)
 
 
 def position_exists(tradingsymbol):
