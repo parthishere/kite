@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response  
+from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.views import APIView
-from django.shortcuts import render, redirect
 from django.conf import settings
 import threading
 import logging
@@ -17,8 +17,8 @@ from . import serializers
 import json
 from .. import constants
 from .. import consumers
-
-from kiteconnect import KiteConnect
+from .permissions import CustomPermission
+from rest_framework.permissions import AllowAny
 
 kite = views.kite
 
@@ -37,9 +37,23 @@ def login_view(request):
         logging.warning("Access token===== %s", data["access_token"])
         consumers.startLiveConnection(str(kite.access_token))
         coreLogic()
-        return Response({'Data':"good"})    
+        return Response({'Data':"User Authenticated"})    
     else:
-        return Response({"Data": "Not good"})
+        return Response({"Data": "User not Authenticated..Please log in "})
+    
+@api_view(["POST"])   
+def logoutUser(request):
+    logging.warning('Logout called = %s', kite.access_token)
+    kite.invalidate_access_token()
+    return Response({'Data':"User UnAuthenticated, please log back in.."})     
+
+
+@api_view(["GET"])
+def login_check_view(request):   
+    if kite.access_token: 
+        return Response({'Data':"User Authenticated"})    
+    else:
+        return Response({"Data": "User not Authenticated..Please log in "})
 
 
        
@@ -56,65 +70,70 @@ def login_with_zerodha(request):
 def algowatch(request):
         
     if kite.access_token is None:
-        return redirect("/")
+        return Response({"Data": "User not Authenticated..Please log in "})
     positionArray = views.getPositions()
+    positionData = serializers.PositionsSerializer(positionArray, many=True).data
     totalPNL = views.total_pnl() or 0
     algoWatchlistArray = models.AlgoWatchlist.objects.all()
-    allInstruments = list(models.Instruments.objects.all(
-    ).values_list('tradingsymbol', flat=True))
-    return Response({'allInstruments': allInstruments, 'algoWatchlistArray': algoWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL})
+    algoData = serializers.AlgoWatchlistSerializer(algoWatchlistArray, many=True).data
+    # allInstruments = list(models.Instruments.objects.all(
+    # ).values_list('tradingsymbol', flat=True))
+    return Response({'algoWatchlistArray': algoData, 'positionArray': positionData, 'totalPNL': totalPNL})
 
 @api_view(["GET"])
 def manualwatch(request):
     if kite.access_token is None:
-        return redirect("/")
+        return Response({"Data": "User not Authenticated..Please log in "})
     positionArray = views.getPositions()
     totalPNL = views.total_pnl()
     manualWatchlistArray = models.ManualWatchlist.objects.all()
-    allInstruments = list(models.Instruments.objects.all(
-    ).values_list('tradingsymbol', flat=True))
-    return Response({'allInstruments': allInstruments, 'manualWatchlistArray': manualWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL})
+    # allInstruments = list(models.Instruments.objects.all(
+    # ).values_list('tradingsymbol', flat=True))
+    return Response({'manualWatchlistArray': manualWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL})
 
 @api_view(['GET'])
 def OrdersApi(reqeust):
-       orders_qs = models.Orders.objects.all()
-       order_json = serializers.OrderSerializer(orders_qs,many=True).data
-       return Response(order_json)
+    orders_qs = models.Orders.objects.all()
+    order_json = serializers.OrderSerializer(orders_qs,many=True).data
+    return Response(order_json)
 
-@api_view(["GET", "POST"])
-def settings_view(request):
-    print(kite.access_token)
-    if kite.access_token is None:
-        return redirect("/")
-    print("HERE")
-    if request.method == "GET":
-        if models.Preferences.objects.filter(scriptName="Default").exists():
-            obj = models.Preferences.objects.filter(scriptName="Default")
-            serializer = serializers.PreferencesSerializer(obj).data
-        else:
-            return Response({"status":406, "data":{"error": "No Default settings found, create settings first"}})
-        return Response(serializer)
+
+class SettingsView(RetrieveUpdateAPIView):
+    serializer_class = serializers.PreferencesSerializer
+    queryset = models.Preferences.objects.first()
+    permission_classes = [CustomPermission, AllowAny]
     
-    if request.method == "POST":
-        time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
-        stoploss = request.POST.get('stoploss')
-        target = request.POST.get('target')
-        scaleupqty = request.POST.get('scaleupqty')
-        scaledownqty = request.POST.get('scaledownqty')
-        openingrange = request.POST.get('openingrange')
-        openingrangebox = request.POST.get('openingrangebox')
-        try:
-            if models.Preferences.objects.filter(scriptName="Default").exists():
-                models.Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
-                                                                        scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
-            else:
-                settings = models.Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
-                                    scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
-                settings.save()
+    # if kite.access_token is None:
+    #     return Response({"Data": "User not Authenticated..Please log in "})
+    
+    # if request.method == "GET":
+    #     if models.Preferences.objects.filter(scriptName="Default").exists():
+    #         obj = models.Preferences.objects.filter(scriptName="Default")
+    #         serializer = serializers.PreferencesSerializer(obj).data
+    #     else:
+    #         return Response({"status":406, "data":{"error": "No Default settings found, create settings first"}})
+    #     return Response(serializer)
+    
+    # if request.method == "POST":
+    #     time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
+    #     stoploss = request.POST.get('stoploss')
+    #     target = request.POST.get('target')
+    #     scaleupqty = request.POST.get('scaleupqty')
+    #     scaledownqty = request.POST.get('scaledownqty')
+    #     openingrange = request.POST.get('openingrange')
+    #     openingrangebox = request.POST.get('openingrangebox')
+    #     try:
+    #         if models.Preferences.objects.filter(scriptName="Default").exists():
+    #             models.Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
+    #                                                                     scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+    #         else:
+    #             settings = models.Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
+    #                                 scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+    #             settings.save()
                 
-        except:
-            return Response({"status": "500" ,"data": {"error":"Some error occured while saving the object on server"}})
-        return Response({"status":200, 'data': "updated/created"})
+    #     except:
+    #         return Response({"status": "500" ,"data": {"error":"Some error occured while saving the object on server"}})
+    #     return Response({"status":200, 'data': "updated/created"})
 
 @api_view(['GET'])
 def PositionsApi(reqeust):
@@ -124,120 +143,180 @@ def PositionsApi(reqeust):
 
 
 # Directly called by frontend to start process
-class StartAlgoAPI(APIView):
+class StartAlgoSingleAPI(APIView):
+    """ Send Intrument name (TCS) and quantity in the parameter POST 
+    {
+        "instrument":"TCS",
+        "instrumentQuantity":1
+    }
+    
+    """
     def post(self,request):
         response = {'error':0,'status':''}
         try:            
-            params = json.loads(request.body)                
-            print("Came from JS to start" + params['script'])            
-            models.AlgoWatchlist.objects.filter(instruments=params['script']).update(startAlgo=True)
-            models.AlgoWatchlist.objects.filter(instruments=params['script']).update(qty=int(params['scriptQty']))        
-            response = {'error':0,'status':'success'}
+            instruments_name = request.POST.get("instrument")   
+            instruments_quantity = request.POST.get("instrumentQuantity")    
+            # print("Came from JS to start" + params['instruments'])            
+            models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
+            models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=int(instruments_quantity))        
+            response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
-            response = {'error':1,'status':str(e)}
+            response['error'] = 1
+            response['status'] = str(e)
             return Response(json.dumps(response))
 
-class StopAlgoAPI(APIView):
+
+class StopAlgoAndManualSingleAPI(APIView):
+    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    {
+        "instrument":"TCS",
+        "instrumentQuantity":1,
+        "is_algo": true // means manual instrument will be automaticly set to false
+    }
+    
+    """
     def post(self,request):
         response = {'error':0,'status':''}
         try:
-            params = json.loads(request.body)
-            print("Came from JS to stop" + params['script'])
-            if 'isFromAlgoTest' in params and params['isFromAlgoTest'] == True:
+            instruments_name = request.POST.get("instrument")   
+            instruments_quantity = request.POST.get("instrumentQuantity") 
+            is_algo = request.POST.get("is_algo") 
+            
+            if is_algo == True or is_algo == "true" or is_algo == 1:
                 print("Stop Single from Algowatchlist")
                 models.AlgoWatchlist.objects.filter(
-                    instruments=params['script']).update(startAlgo=False)
-                models.AlgoWatchlist.objects.filter(instruments=params['script']).update(
-                    qty=int(params['scriptQty']))
+                    instruments=instruments_name).update(startAlgo=False)
+                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(
+                    qty=int(instruments_quantity))
             else:
                 print("Stop Single from Manualwatchlist")
                 models.ManualWatchlist.objects.filter(
-                    instruments=params['script']).update(startAlgo=False)
+                    instruments=instruments_name).update(startAlgo=False)
                 models.ManualWatchlist.objects.filter(
-                    instruments=params['script']).update(isSellClicked=False)
+                    instruments=instruments_name).update(isSellClicked=False)
                 models.ManualWatchlist.objects.filter(
-                    instruments=params['script']).update(isBuyClicked=False)
-                models.ManualWatchlist.objects.filter(instruments=params['script']).update(
-                    qty=int(params['scriptQty']))        
-            response = {'error':0,'status':'success'}
+                    instruments=instruments_name).update(isBuyClicked=False)
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(
+                    qty=int(instruments_quantity)) 
+                       
+            response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
-            response = {'error':1,'status':str(e)}
+            response['error'] = 1
+            response['status'] = str(e)
             return Response(json.dumps(response))
 
 class StartAllAPI(APIView):
+    """ Send Inothing in the POST request
+    """
     def post(self,request):
         response = {'error':0,'status':''}
         try:
-            params = json.loads(request.body)
+            instruments_quantity = request.POST.get("instrumentQuantity") 
             print("Came from JS to start All")
             algo_array = models.AlgoWatchlist.objects.all()
             print(len(algo_array))
             for items in algo_array:
                 print("Starting for all items: ", items.instruments)
                 models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(startAlgo=True)
-                models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=int(params['scriptQty']))
-            response = {'error':0,'status':'success'}
+                models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=int(instruments_quantity))
+            response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
-            response = {'error':1,'status':str(e)}
+            response['error'] = 1
+            response['status'] = str(e)
             return Response(json.dumps(response))
 
-class BuySingleAPI(APIView):
+class BuySingleManualAPI(APIView):
+    """ Send Intrument name (TCS) and quantity  in the parameter POST 
+    {
+        "instrument":"TCS",
+        "instrumentQuantity":1,
+    }
+    
+    """
     def post(self,request):
         response = {'error':0,'status':''}
         try:
-            params = json.loads(request.body)            
-            print("Came from JS to buy single" + params['script'])
-            print("Came from JS to start" + params['scriptQty'])
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(startAlgo=True)
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(positionType="BUY")
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(qty=int(params['scriptQty']))
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(isBuyClicked=True)            
-            response = {'error':0,'status':'success'}
-            return Response(json.dumps(response))                            
-        except Exception as e:
-            response = {'error':1,'status':str(e)}
+            instruments_name = request.POST.get("instrument")   
+            instruments_quantity = request.POST.get("instrumentQuantity") 
+            
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="BUY")
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=int(instruments_quantity))
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isBuyClicked=True)            
+            response['status'] = 'success'
             return Response(json.dumps(response))
+        except Exception as e:
+            response['error'] = 1
+            response['status'] = str(e)
+            return Response(json.dumps(response))
+        
         
 class SellSingle(APIView):
+    """ Send Intrument name (TCS) and quantity  in the parameter POST 
+    {
+        "instrument":"TCS",
+        "instrumentQuantity":1,
+    }
+    
+    """
+    def post(self,request):
+        response = {'error':0,'status':''}
+        try:         
+            instruments_name = request.POST.get("instrument")   
+            instruments_quantity = request.POST.get("instrumentQuantity") 
+
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="SELL")
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=int(instruments_quantity))
+            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isSellClicked=True)            
+            response['status'] = 'success'
+            return Response(json.dumps(response))
+        except Exception as e:
+            response['error'] = 1
+            response['status'] = str(e)
+            return Response(json.dumps(response))
+       
+       
+        
+class ScaleUpQtyAPI(APIView):
+    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    {
+        "instrument":"TCS",
+        "instrumentQuantity":1,
+        "is_algo": true // means manual instrument will be automaticly set to false
+    }
+    
+    """
     def post(self,request):
         response = {'error':0,'status':''}
         try:
-            params = json.loads(request.body)            
-            print("Came from JS to sell single" + params['script'])
-            print("Came from JS to start" + params['scriptQty'])
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(startAlgo=True)
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(positionType="SELL")
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(qty=int(params['scriptQty']))
-            models.ManualWatchlist.objects.filter(instruments=params['script']).update(isSellClicked=True)            
-            response = {'error':0,'status':'success'}
-            return Response(json.dumps(response))            
-        except Exception as e:
-            response = {'error':0,'status':str(e)}
-            return Response(json.dumps(response))
-        
-class ScaleUpQtyAPI(APIView):
-     def post(self,request):
-        response = {'error':0,'status':''}
-        try:
-            params = json.loads(request.body)               
-            script = params['script']
-            qty = params['scriptQty']
-            print("Updated QTY ===========+++++++", script, qty, params['isFromAlgoTest'])
-            if 'isFromAlgoTest' in params and params['isFromAlgoTest'] == True:
-                models.AlgoWatchlist.objects.filter(instruments=script).update(qty=qty)
+            instruments_name = request.POST.get("instrument")   
+            instruments_quantity = request.POST.get("instrumentQuantity") 
+            is_algo = request.POST.get("is_algo") 
+            print("Updated QTY ===========+++++++", instruments_name, instruments_quantity, is_algo)
+            if is_algo == True or is_algo == "true" or is_algo == 1:
+                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
             else:
-                models.ManualWatchlist.objects.filter(instruments=script).update(qty=qty)                
-            response = {'error':0,'status':'success'}
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)                
+            response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
-            response = {'error':0,'status':str(e)}
+            response['error'] = 1
+            response['status'] = str(e)
             return Response(json.dumps(response))
 
 class ScaleDownQtyAPI(APIView):
-     def post(self,request):
+    """ Send Intrument name (TCS) and quantity  in the parameter POST 
+    {
+        "instrument":"TCS",
+        "instrumentQuantity":1,
+    }
+    
+    """
+    def post(self,request):
         response = {'error':0,'status':''}
         try:
             params = json.loads(request.body)               
@@ -248,11 +327,13 @@ class ScaleDownQtyAPI(APIView):
                 models.AlgoWatchlist.objects.filter(instruments=script).update(qty=qty)
             else:
                 models.ManualWatchlist.objects.filter(instruments=script).update(qty=qty)
-            response = {'error':0,'status':'success'}
+            response['status'] = 'success'
             return Response(json.dumps(response))
         except Exception as e:
-            response = {'error':0,'status':str(e)}
+            response['error'] = 1
+            response['status'] = str(e)
             return Response(json.dumps(response))
+
 
 class AddInstrumentAPI(APIView):
     def post(self,request):

@@ -8,25 +8,14 @@ class PreferencesSerializer(serializers.ModelSerializer):
         
 class AlgoWatchlistSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Preferences
+        model=AlgoWatchlist
         fields = "__all__"
         
 class InstrumentsSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Preferences
+        model=Instruments
         fields = "__all__"
 
-# For algowatch API
-class AlgoWatchSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AlgoWatchlist
-        fields = "__all__"
-
-# For instrument API
-class InstrumentSearializer(serializers.ModelSerializer):
-    class Meta:
-        model = Instruments
-        fields = "__all__"
 
 # For orderlist API
 class OrderSerializer(serializers.ModelSerializer):
