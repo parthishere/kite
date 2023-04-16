@@ -1,6 +1,6 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response  
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, ListAPIView
 from rest_framework.views import APIView
 from django.conf import settings
 import threading
@@ -19,6 +19,8 @@ from .. import constants
 from .. import consumers
 from .permissions import CustomPermission
 from rest_framework.permissions import AllowAny
+import django_filters.rest_framework
+from rest_framework import filters
 
 kite = views.kite
 
@@ -93,9 +95,19 @@ def manualwatch(request):
 
 @api_view(['GET'])
 def OrdersApi(reqeust):
+    if kite.access_token is None:
+        return Response({"Data": "User not Authenticated..Please log in "}) 
     orders_qs = models.Orders.objects.all()
     order_json = serializers.OrderSerializer(orders_qs,many=True).data
     return Response(order_json)
+
+
+class SearchInstrumentsAPI(ListAPIView):
+    serializer_class = serializers.SearchInstrumentsSerializer
+    queryset = models.Instruments.objects.all()
+    filter_backends = [django_filters.rest_framework.DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['instrument_type', 'exchange']
+    search_fields = ['instrument_token', 'exchange_token', "tradingsymbol", "name"]
 
 
 class SettingsView(RetrieveUpdateAPIView):
@@ -137,31 +149,41 @@ class SettingsView(RetrieveUpdateAPIView):
 
 @api_view(['GET'])
 def PositionsModelApi(reqeust):
-       positions_qs = models.Positions.objects.all()
-       positions_json = serializers.PositionsSerializer(positions_qs,many=True).data
-       return Response(positions_json)
+    if kite.access_token is None:
+        return Response({"Data": "User not Authenticated..Please log in "}) 
+    positions_qs = models.Positions.objects.all()
+    positions_json = serializers.PositionsSerializer(positions_qs,many=True).data
+    return Response(positions_json)
 
 
 # Directly called by frontend to start process
 class StartAlgoSingleAPI(APIView):
     """ Send Intrument name (TCS) and quantity in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1
     }
     
     """
     def post(self,request):
         response = {'error':0,'status':''}
-        try:            
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "})
+        try:     
+            parmas = json.loads(request.body)       
             instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity")  
-            print(instruments_name)  
-            # print("Came from JS to start" + params['instruments'])            
-            models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-            models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)        
-            response['status'] = 'success'
-            return Response(response)
+            instruments_quantity = request.POST.get("instrumentQuantity") 
+            if instruments_name and instruments_quantity: 
+                print(instruments_name)  
+                # print("Came from JS to start" + params['instruments'])            
+                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
+                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)        
+                response['status'] = 'success'
+                return Response(response)
+            else:
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
@@ -171,7 +193,7 @@ class StartAlgoSingleAPI(APIView):
 class StopAlgoAndManualSingleAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticly set to false
     }
@@ -179,30 +201,36 @@ class StopAlgoAndManualSingleAPI(APIView):
     """
     def post(self,request):
         response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "})  
         try:
             instruments_name = request.POST.get("instrument")   
             instruments_quantity = request.POST.get("instrumentQuantity") 
             is_algo = request.POST.get("is_algo") 
-            
-            if is_algo == True or is_algo == "true" or is_algo == 1:
-                print("Stop Single from Algowatchlist")
-                models.AlgoWatchlist.objects.filter(
-                    instruments=instruments_name).update(startAlgo=False)
-                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(
-                    qty=instruments_quantity)
+            if instruments_name and instruments_quantity and is_algo:
+                if is_algo == True or is_algo == "true" or is_algo == 1:
+                    print("Stop Single from Algowatchlist")
+                    models.AlgoWatchlist.objects.filter(
+                        instruments=instruments_name).update(startAlgo=False)
+                    models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(
+                        qty=instruments_quantity)
+                else:
+                    print("Stop Single from Manualwatchlist")
+                    models.ManualWatchlist.objects.filter(
+                        instruments=instruments_name).update(startAlgo=False)
+                    models.ManualWatchlist.objects.filter(
+                        instruments=instruments_name).update(isSellClicked=False)
+                    models.ManualWatchlist.objects.filter(
+                        instruments=instruments_name).update(isBuyClicked=False)
+                    models.ManualWatchlist.objects.filter(instruments=instruments_name).update(
+                        qty=instruments_quantity)
+                        
+                response['status'] = 'success'
+                return Response(response)
             else:
-                print("Stop Single from Manualwatchlist")
-                models.ManualWatchlist.objects.filter(
-                    instruments=instruments_name).update(startAlgo=False)
-                models.ManualWatchlist.objects.filter(
-                    instruments=instruments_name).update(isSellClicked=False)
-                models.ManualWatchlist.objects.filter(
-                    instruments=instruments_name).update(isBuyClicked=False)
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(
-                    qty=instruments_quantity)
-                       
-            response['status'] = 'success'
-            return Response(response)
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
@@ -216,14 +244,19 @@ class StartAllAPI(APIView):
         try:
             instruments_quantity = request.POST.get("instrumentQuantity") 
             print("Came from JS to start All")
-            algo_array = models.AlgoWatchlist.objects.all()
-            print(len(algo_array))
-            for items in algo_array:
-                print("Starting for all items: ", items.instruments)
-                models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(startAlgo=True)
-                models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=instruments_quantity)
-            response['status'] = 'success'
-            return Response(response)
+            if instruments_quantity:
+                algo_array = models.AlgoWatchlist.objects.all()
+                print(len(algo_array))
+                for items in algo_array:
+                    print("Starting for all items: ", items.instruments)
+                    models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(startAlgo=True)
+                    models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=instruments_quantity)
+                response['status'] = 'success'
+                return Response(response)
+            else:
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
@@ -232,23 +265,29 @@ class StartAllAPI(APIView):
 class BuySingleManualAPI(APIView):
     """ Send Intrument name (TCS) and quantity  in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
     }
     
     """
     def post(self,request):
         response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "}) 
         try:
             instruments_name = request.POST.get("instrument")   
             instruments_quantity = request.POST.get("instrumentQuantity") 
-            
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="BUY")
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isBuyClicked=True)            
-            response['status'] = 'success'
-            return Response(response)
+            if instruments_name and instruments_quantity:
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="BUY")
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isBuyClicked=True)            
+                response['status'] = 'success'
+                return Response(response)
+            else:
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
@@ -258,23 +297,29 @@ class BuySingleManualAPI(APIView):
 class SellSingle(APIView):
     """ Send Intrument name (TCS) and quantity  in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
     }
     
     """
     def post(self,request):
         response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "}) 
         try:         
             instruments_name = request.POST.get("instrument")   
             instruments_quantity = request.POST.get("instrumentQuantity") 
-
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="SELL")
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
-            models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isSellClicked=True)            
-            response['status'] = 'success'
-            return Response(response)
+            if instruments_name and instruments_quantity:
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="SELL")
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
+                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isSellClicked=True)            
+                response['status'] = 'success'
+                return Response(response)
+            else:
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
@@ -285,6 +330,41 @@ class SellSingle(APIView):
 class ScaleUpQtyAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
+        "instrument":"TCS", // Trading Symbol
+        "instrumentQuantity":1,
+        "is_algo": true // means manual instrument will be automaticly set to false
+    }
+    
+    """
+    def post(self,request):
+        response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "}) 
+        try:
+            instruments_name = request.POST.get("instrument")   
+            instruments_quantity = request.POST.get("instrumentQuantity") 
+            is_algo = request.POST.get("is_algo") 
+            
+            if instruments_name and instruments_quantity and is_algo:
+                print("Updated QTY ===========+++++++", instruments_name, instruments_quantity, is_algo)
+                if is_algo == True or is_algo == "true" or is_algo == 1:
+                    models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
+                else:
+                    models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)                
+                response['status'] = 'success'
+                return Response(response)
+            else:
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
+        except Exception as e:
+            response['error'] = 1
+            response['status'] = str(e)
+            return Response(response)
+
+class ScaleDownQtyAPI(APIView):
+    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    {
         "instrument":"TCS",
         "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticly set to false
@@ -293,72 +373,70 @@ class ScaleUpQtyAPI(APIView):
     """
     def post(self,request):
         response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "}) 
         try:
-            instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity") 
-            is_algo = request.POST.get("is_algo") 
-            print("Updated QTY ===========+++++++", instruments_name, instruments_quantity, is_algo)
-            if is_algo == True or is_algo == "true" or is_algo == 1:
-                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
+            params = json.loads(request.body)               
+            instrument_name = params['instrument']
+            instrument_quantity = params['instrumentQuantity']
+            is_algo = params["is_algo"]
+            if instrument_name and instrument_quantity:
+                print("Updated QTY ===========+++++++", instrument_name, instrument_quantity)
+                if is_algo == True or is_algo == "true" or is_algo == 1:
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+                else:
+                    models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+                response['status'] = 'success'
+                return Response(response)
             else:
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)                
-            response['status'] = 'success'
-            return Response(response)
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
             return Response(response)
 
-class ScaleDownQtyAPI(APIView):
-    """ Send Intrument name (TCS) and quantity  in the parameter POST 
+
+## Ahithi baki 6e API banavva ni
+class AddInstrumentAPI(APIView):
+    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
         "instrument":"TCS",
         "instrumentQuantity":1,
+        "is_algo": true // means manual instrument will be automaticly set to false
     }
     
     """
     def post(self,request):
         response = {'error':0,'status':''}
-        try:
-            params = json.loads(request.body)               
-            script = params['script']
-            qty = params['scriptQty']
-            print("Updated QTY ===========+++++++", script, qty)
-            if 'isFromAlgoTest' in params and params['isFromAlgoTest'] == True:
-                models.AlgoWatchlist.objects.filter(instruments=script).update(qty=qty)
-            else:
-                models.ManualWatchlist.objects.filter(instruments=script).update(qty=qty)
-            response['status'] = 'success'
-            return Response(response)
-        except Exception as e:
-            response['error'] = 1
-            response['status'] = str(e)
-            return Response(response)
-
-## Ahithi baki 6e API banavva ni
-class AddInstrumentAPI(APIView):
-    def post(self,request):
-        response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "}) 
         try:
             params = json.loads(request.body)             
-            print("Came from JS to Add Instrument ==============" + params['script'])
-            script = params['script']
-            flag = params['flag']
-            instrumentObject = models.Instruments.objects.filter(tradingsymbol=script).values()
-            instumentData = instrumentObject[0]
-            print(instumentData["instrument_token"])
-            print(instumentData["tradingsymbol"])
-            updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
-            if flag == "ManualWatch":
-                instrumentObjectToManualWatchlistObject(instrumentObject)
-                manualWatchObject = models.ManualWatchlist.objects.filter(instruments=script).values()
-                response = {'error':0,'status':'success','instrument':list(manualWatchObject)}
-                return Response(response)                    
-            elif flag == "AlgoWatch":
-                instrumentObjectToAlgoWatchlistObject(instrumentObject)
-                algoWatchObject = models.AlgoWatchlist.objects.filter(instruments=script).values()
-                response = {'error':0,'status':'success','instrument':list(algoWatchObject)}
-                return Response(response)                   
+            print("Came from JS to Add Instrument ==============" + params['instrument'])
+            instrument_name = params['instrument']
+            is_algo = params['is_algo']
+            if instrument_name and is_algo:
+                instrumentObject = models.Instruments.objects.filter(tradingsymbol=instrument_name).values()
+                instumentData = instrumentObject[0]
+                print(instumentData["instrument_token"])
+                print(instumentData["tradingsymbol"])
+                updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
+                if flag == "ManualWatch":
+                    instrumentObjectToManualWatchlistObject(instrumentObject)
+                    manualWatchObject = models.ManualWatchlist.objects.filter(instruments=instrument_name).values()
+                    response = {'error':0,'status':'success','instrument':list(manualWatchObject)}
+                    return Response(response)                    
+                elif flag == "AlgoWatch":
+                    instrumentObjectToAlgoWatchlistObject(instrumentObject)
+                    algoWatchObject = models.AlgoWatchlist.objects.filter(instruments=instrument_name).values()
+                    response = {'error':0,'status':'success','instrument':list(algoWatchObject)}
+                    return Response(response)  
+            else:
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)                 
         except Exception as e:
             response = {'error':0,'status':str(e)}
             return Response(response)
@@ -369,9 +447,12 @@ class DeleteInstrumentAPI(APIView):
     """
     def post(self,request):
         response = {'error':0,'status':''}
+        if kite.access_token is None:
+            return Response({"Data": "User not Authenticated..Please log in "}) 
         try:
-            params = json.loads(request.body)            
-            script = params['script']
+            params = json.loads(request.body)             
+            print("Came from JS to Add Instrument ==============" + params['script'])
+            instrument_name = params['script']
             flag = params['flag']
             if flag == "ManualWatch":
                 models.ManualWatchlist.objects.filter(instruments=script).delete()

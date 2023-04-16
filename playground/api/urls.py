@@ -3,7 +3,8 @@ from django.urls import path
 
 urlpatterns = [
     path("login/", views.login_view, name="api-login-view"),    
-    path("login-check/", views.login_check_view, name="api-login-view"),    
+    path("login-check/", views.login_check_view, name="api-login-view"), 
+    path("instuments-list/", views.SearchInstrumentsAPI.as_view(), name="list-search-api"),
     path("autologin/", views.login_with_zerodha,name="API-Autologin"),
     path("algowatch", views.algowatch,name="API-Algowatch"),
     path("manualwatch",  views.manualwatch, name="API-Manualwatch"),
