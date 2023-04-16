@@ -20,7 +20,7 @@ class InstrumentsSerializer(serializers.ModelSerializer):
 class SearchInstrumentsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Instruments
-        fields = ["instrument_token", "exchange_token", "tradingsymbol", "name", "instrument_type"]
+        fields = ["instrument_token","tradingsymbol"]
 
 # For orderlist API
 class OrderSerializer(serializers.ModelSerializer):

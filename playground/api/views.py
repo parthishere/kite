@@ -403,7 +403,6 @@ class AddInstrumentAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
         "instrument":"TCS",
-        "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticly set to false
     }
     
@@ -423,12 +422,12 @@ class AddInstrumentAPI(APIView):
                 print(instumentData["instrument_token"])
                 print(instumentData["tradingsymbol"])
                 updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
-                if flag == "ManualWatch":
+                if is_algo == True or is_algo == "true" or is_algo == 1:
                     instrumentObjectToManualWatchlistObject(instrumentObject)
                     manualWatchObject = models.ManualWatchlist.objects.filter(instruments=instrument_name).values()
                     response = {'error':0,'status':'success','instrument':list(manualWatchObject)}
                     return Response(response)                    
-                elif flag == "AlgoWatch":
+                else:
                     instrumentObjectToAlgoWatchlistObject(instrumentObject)
                     algoWatchObject = models.AlgoWatchlist.objects.filter(instruments=instrument_name).values()
                     response = {'error':0,'status':'success','instrument':list(algoWatchObject)}
@@ -442,8 +441,12 @@ class AddInstrumentAPI(APIView):
             return Response(response)
             
 class DeleteInstrumentAPI(APIView):
-    """
-    Will Delete the instruments
+    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    {
+        "instrument":"TCS",
+        "is_algo": true // means manual instrument will be automaticly set to false
+    }
+    
     """
     def post(self,request):
         response = {'error':0,'status':''}
@@ -451,12 +454,12 @@ class DeleteInstrumentAPI(APIView):
             return Response({"Data": "User not Authenticated..Please log in "}) 
         try:
             params = json.loads(request.body)             
-            print("Came from JS to Add Instrument ==============" + params['script'])
-            instrument_name = params['script']
-            flag = params['flag']
-            if flag == "ManualWatch":
+            print("Came from JS to Add Instrument ==============" + params['instrument'])
+            instrument_name = params['instrument']
+            is_algo = params['is_algo']
+            if is_algo == True or is_algo == "true" or is_algo == 1:
                 models.ManualWatchlist.objects.filter(instruments=script).delete()
-            elif flag == "AlgoWatch":
+            else:
                 models.AlgoWatchlist.objects.filter(instruments=script).delete()
             instrumentObject = models.Instruments.objects.filter(tradingsymbol=script).values()
             instumentData = instrumentObject[0]
