@@ -21,4 +21,6 @@ urlpatterns = [
     path('addInstrument/', views.AddInstrumentAPI.as_view(), name='AddInstrumentAPI'),
     path('deleteInstrument/', views.DeleteInstrumentAPI.as_view(), name='DeleteInstrumentAPI'),  
     path("logout", views.logoutUser, name="API-Logout"),  
+    
+    # search
 ]

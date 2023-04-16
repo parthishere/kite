@@ -155,7 +155,8 @@ class StartAlgoSingleAPI(APIView):
         response = {'error':0,'status':''}
         try:            
             instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity")    
+            instruments_quantity = request.POST.get("instrumentQuantity")  
+            print(instruments_name)  
             # print("Came from JS to start" + params['instruments'])            
             models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
             models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)        
@@ -164,7 +165,7 @@ class StartAlgoSingleAPI(APIView):
         except Exception as e:
             response['error'] = 1
             response['status'] = str(e)
-            return Response(response)
+            return Response(response) 
 
 
 class StopAlgoAndManualSingleAPI(APIView):
