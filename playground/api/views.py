@@ -365,7 +365,7 @@ class ScaleUpQtyAPI(APIView):
 class ScaleDownQtyAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticly set to false
     }
@@ -402,7 +402,7 @@ class ScaleDownQtyAPI(APIView):
 class AddInstrumentAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "is_algo": true // means manual instrument will be automaticly set to false
     }
     
@@ -432,7 +432,7 @@ class AddInstrumentAPI(APIView):
                     algoWatchObject = models.AlgoWatchlist.objects.filter(instruments=instrument_name).values()
                     response = {'error':0,'status':'success','instrument':list(algoWatchObject)}
                     return Response(response)  
-            else:
+            else:           
                 response['error'] = 1
                 response['status'] = "Not valid parameters"
                 return Response(response)                 
@@ -443,7 +443,7 @@ class AddInstrumentAPI(APIView):
 class DeleteInstrumentAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
     {
-        "instrument":"TCS",
+        "instrument":"TCS", // Trading Symbol
         "is_algo": true // means manual instrument will be automaticly set to false
     }
     
@@ -457,15 +457,20 @@ class DeleteInstrumentAPI(APIView):
             print("Came from JS to Add Instrument ==============" + params['instrument'])
             instrument_name = params['instrument']
             is_algo = params['is_algo']
-            if is_algo == True or is_algo == "true" or is_algo == 1:
-                models.ManualWatchlist.objects.filter(instruments=script).delete()
-            else:
-                models.AlgoWatchlist.objects.filter(instruments=script).delete()
-            instrumentObject = models.Instruments.objects.filter(tradingsymbol=script).values()
-            instumentData = instrumentObject[0]
-            updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-            response = {'error':0,'status':'success'}
-            return Response(response)            
+            if instrument_name and is_algo: 
+                if is_algo == True or is_algo == "true" or is_algo == 1:
+                    models.ManualWatchlist.objects.filter(instruments=instrument_name).delete()
+                else:
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).delete()
+                instrumentObject = models.Instruments.objects.filter(tradingsymbol=instrument_name).values()
+                instumentData = instrumentObject[0]
+                updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                response = {'error':0,'status':'success'}
+                return Response(response)    
+            else:           
+                response['error'] = 1
+                response['status'] = "Not valid parameters"
+                return Response(response)           
         except Exception as e:
             response = {'error':0,'status':str(e)}
             return Response(response)
