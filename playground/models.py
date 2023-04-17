@@ -5,7 +5,6 @@ from django.db import models
 
 # Create your models here.
 
-
 class Preferences(models.Model):
     time = models.TimeField(default=time(hour=10))
     stoploss = models.FloatField(default=0.2)
@@ -88,7 +87,8 @@ class Orders(models.Model):
     transactionType = models.CharField(max_length=100, default="BUY")
     avgTradedPrice = models.FloatField(default=0.0)
     product = models.CharField(max_length=100, default="MIS")
-
+    def __str__(self):
+        return self.instruments
 
 class Instruments(models.Model):
     instrument_token = models.CharField(max_length=100)
@@ -103,3 +103,4 @@ class Instruments(models.Model):
     instrument_type = models.CharField(max_length=100)
     segment = models.CharField(max_length=100)
     exchange = models.CharField(max_length=100)
+
