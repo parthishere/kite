@@ -202,10 +202,30 @@ def PositionsModelApi(reqeust):
 # Directly called by frontend to start process
 class StartAlgoSingleAPI(APIView):
     """ Send Intrument name (TCS) and quantity in the request.body as a json response 
-    {
+    @param: "instument"
+    @param: "instrumentQuantity"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
-        "instrumentQuantity":1
+        "instrumentQuantity":1,
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+  
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "instrumentQuantity":1,
     
     """
     def post(self,request):
@@ -242,11 +262,32 @@ class StartAlgoSingleAPI(APIView):
 
 class StopAlgoAndManualSingleAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
-    {
+    @param: "instument"
+    @param: "instrumentQuantity"
+    @param: "is_algo"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticaly set to false
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    .then(response => response.json())
+    
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "instrumentQuantity":1,
+    "is_algo": true // means manual instrument will be automaticaly set to false
+    
     
     """
     def post(self,request):
@@ -333,11 +374,29 @@ class StartAllAPI(APIView):
             return Response(response)
 
 class BuySingleManualAPI(APIView):
-    """ Send Intrument name (TCS) and quantity  in the request.body as a json response  
-    {
+    """ Send Intrument name (TCS) and quantity  in the request.body as a json response 
+    @param: "instument"
+    @param: "instrumentQuantity"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "instrumentQuantity":1,
     
     """
     def post(self,request):
@@ -374,10 +433,29 @@ class BuySingleManualAPI(APIView):
         
 class SellSingleManualAPI(APIView):
     """ Send Intrument name (TCS) and quantity  in the request.body as a json response 
-    {
+    @param: "instument"
+    @param: "instrumentQuantity"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "instrumentQuantity":1,
+    
     
     """
     def post(self,request):
@@ -415,11 +493,31 @@ class SellSingleManualAPI(APIView):
         
 class ScaleUpQtyAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
-    {
+    @param: "instument"
+    @param: "instrumentQuantity"
+    @param: "is_algo"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticaly set to false
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "instrumentQuantity":1,
+    "is_algo": true // means manual instrument will be automaticaly set to false
     
     """
     def post(self,request):
@@ -458,11 +556,31 @@ class ScaleUpQtyAPI(APIView):
 
 class ScaleDownQtyAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
-    {
+    @param: "instument"
+    @param: "instrumentQuantity"
+    @param: "is_algo"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
         "is_algo": true // means manual instrument will be automaticaly set to false
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "instrumentQuantity":1,
+    "is_algo": true // means manual instrument will be automaticaly set to false
     
     """
     def post(self,request):
@@ -501,18 +619,41 @@ class ScaleDownQtyAPI(APIView):
 
 ## Ahithi baki 6e API banavva ni
 class LiveSearchAndAddInstrumentAPI(APIView):
-    """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
+    """
+    It will send all the instruments trading symbol starting from instrument data
+    
+    Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     @param: "instument"
     @param: "is_algo"
-    {
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "is_algo": true // means manual instrument will be automaticaly set to false
     }
     
-    {
-        "instrument":"T", // Trading Symbol starting with T
-        "is_algo": true // means manual instrument will be automaticaly set to false
-    } // It will send all the instruments trading symbol starting from letter T
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+
+    
+    example:
+
+    "instrument":"TCS", // Trading Symbol
+    "is_algo": true // means manual instrument will be automaticaly set to false
+
+    
+    example:
+    
+    "instrument":"T", // Trading Symbol starting with T
+    "is_algo": true // means manual instrument will be automaticaly set to false
+    
     """
     def post(self,request):
         response = {'error':0,'status':'', "data":""}
@@ -554,10 +695,31 @@ class LiveSearchAndAddInstrumentAPI(APIView):
             
 class DeleteInstrumentAPI(APIView):
     """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
-    {
+    @param: "instument"
+    @param: "is_algo"
+    
+    const data = {
         "instrument":"TCS", // Trading Symbol
         "is_algo": true // means manual instrument will be automaticaly set to false
     }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    "is_algo": true // means manual instrument will be automaticaly set to false
+    
     
     """
     def post(self,request):
