@@ -16,10 +16,10 @@ urlpatterns = [
     path('stopAlgo/', views.StopAlgoAndManualSingleAPI.as_view(), name='StopAlgoSingleAPI'),
     path('startAll/', views.StartAllAPI.as_view(), name='StartAllAPI'),
     path('buySingle/', views.BuySingleManualAPI.as_view(), name='BuySingleManualAPI'),
-    path('sellSingle/', views.SellSingle.as_view(), name='SellSingle'),
+    path('sellSingle/', views.SellSingleManualAPI.as_view(), name='SellSingle'),
     path('scaleUpQty/', views.ScaleUpQtyAPI.as_view(), name='ScaleUpQtyAPI'),
     path('scaleDownQty/', views.ScaleDownQtyAPI.as_view(), name='ScaleDownQtyAPI'),
-    path('addInstrument/', views.AddInstrumentAPI.as_view(), name='AddInstrumentAPI'),
+    path('Search-addInstrument/', views.LiveSearchAndAddInstrumentAPI.as_view(), name='AddInstrumentAPI'),
     path('deleteInstrument/', views.DeleteInstrumentAPI.as_view(), name='DeleteInstrumentAPI'),  
     path("logout", views.logoutUser, name="API-Logout"),  
     
