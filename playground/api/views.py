@@ -169,6 +169,50 @@ def OrdersApi(reqeust):
 
 
 def SettingsView(request):
+    """ Send Intrument time (%H:%M:%S format), stoploss, target, scaleupqty, scaledownqty, openingrange and openingrangebox in the request.body as a json response 
+    @param: "time"
+    @param: "stoploss"
+    @param: "target"
+    @param: "scaleupqty"
+    @param: "scaledownqty"
+    @param: "openingrange"
+    @param: "openingrangebox"
+    
+    
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    
+    const data = {
+        "time":currentTime, // Trading Symbol
+        "stoploss":0.2, // float
+        "target": 1.0, // float
+        "scaleupqty":1, // integer
+        "scaledownqty":1, //integer
+        "openingrange":10.0, // float
+        "openingrangebox":false, // boolean       
+    }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
+  
+    
+    example:
+    
+    "time":"TCS", // Trading Symbol
+    "stoploss":0.2, // float
+    "target": 1.0, // float
+    "scaleupqty":1, // integer
+    "scaledownqty":1, //integer
+    "openingrange":10.0, // float
+    "openingrangebox":false, // boolean
+    """
     response = {'error':0,'status':'', "data":""}
     if not kite.access_token:
         response['error'] = 1
@@ -177,6 +221,7 @@ def SettingsView(request):
         return Response(response)
 
     if request.method == "POST":
+        request.body
         time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
         stoploss = request.POST.get('stoploss')
         target = request.POST.get('target')
@@ -191,11 +236,18 @@ def SettingsView(request):
             settings = models.Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
                                    scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
             settings.save()
-        'Preference updated successfully!'
-        return Response("")
+        
+        response['error'] = 0
+        response['status'] = "success"
+        response["data"] = 'Preference updated successfully!'
+        return Response(response)
     else:
         settingsValues = models.Preferences.objects.all()
-        return Response("")
+        json_data = serializers.PreferencesSerializer(settingsValues).data
+        response['error'] = 0
+        response['status'] = "success"
+        response["data"] = {"settings":json_data}
+        return Response(response)
     
     # if not kite.access_token :
     #     return Response({"Data": "User not Authenticated..Please log in "})
