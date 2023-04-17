@@ -201,7 +201,7 @@ def PositionsModelApi(reqeust):
 
 # Directly called by frontend to start process
 class StartAlgoSingleAPI(APIView):
-    """ Send Intrument name (TCS) and quantity in the parameter POST 
+    """ Send Intrument name (TCS) and quantity in the request.body as a json response 
     {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1
@@ -217,13 +217,13 @@ class StartAlgoSingleAPI(APIView):
             return Response(response) 
         try:     
             params = json.loads(request.body)       
-            instruments_name = params.get("instrument")   
-            instruments_quantity = params.get("instrumentQuantity") 
-            if instruments_name and instruments_quantity: 
-                print(instruments_name)  
+            instrument_name = params.get("instrument")   
+            instrument_quantity = params.get("instrumentQuantity") 
+            if instrument_name and instrument_quantity: 
+                print(instrument_name)  
                 # print("Came from JS to start" + params['instruments'])            
-                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-                models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)     
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)     
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -241,11 +241,11 @@ class StartAlgoSingleAPI(APIView):
 
 
 class StopAlgoAndManualSingleAPI(APIView):
-    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
-        "is_algo": true // means manual instrument will be automaticly set to false
+        "is_algo": true // means manual instrument will be automaticaly set to false
     }
     
     """
@@ -258,26 +258,27 @@ class StopAlgoAndManualSingleAPI(APIView):
             return Response(response)
             
         try:
-            instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity") 
-            is_algo = request.POST.get("is_algo") 
-            if instruments_name and instruments_quantity and is_algo:
+            params = json.loads(request.body)               
+            instrument_name = params['instrument']
+            instrument_quantity = params['instrumentQuantity']
+            is_algo = params["is_algo"] 
+            if instrument_name and instrument_quantity and is_algo:
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     print("Stop Single from Algowatchlist")
                     models.AlgoWatchlist.objects.filter(
-                        instruments=instruments_name).update(startAlgo=False)
-                    models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(
-                        qty=instruments_quantity)
+                        instruments=instrument_name).update(startAlgo=False)
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(
+                        qty=instrument_quantity)
                 else:
                     print("Stop Single from Manualwatchlist")
                     models.ManualWatchlist.objects.filter(
-                        instruments=instruments_name).update(startAlgo=False)
+                        instruments=instrument_name).update(startAlgo=False)
                     models.ManualWatchlist.objects.filter(
-                        instruments=instruments_name).update(isSellClicked=False)
+                        instruments=instrument_name).update(isSellClicked=False)
                     models.ManualWatchlist.objects.filter(
-                        instruments=instruments_name).update(isBuyClicked=False)
-                    models.ManualWatchlist.objects.filter(instruments=instruments_name).update(
-                        qty=instruments_quantity)
+                        instruments=instrument_name).update(isBuyClicked=False)
+                    models.ManualWatchlist.objects.filter(instruments=instrument_name).update(
+                        qty=instrument_quantity)
                     
                 response['error'] = 0     
                 response['status'] = 'success'
@@ -296,7 +297,7 @@ class StopAlgoAndManualSingleAPI(APIView):
 
 
 class StartAllAPI(APIView):
-    """ Send nothing in the POST request
+    """ Send nothing in the request.body as a json response 
     """
     def post(self,request):
         response = {'error':0,'status':'', "data":""}
@@ -306,15 +307,16 @@ class StartAllAPI(APIView):
             response["data"] = "User not Authenticated..Please log in "
             return Response(response)
         try:
-            instruments_quantity = request.POST.get("instrumentQuantity") 
+            params = json.loads(request.body)               
+            instrument_quantity = params['instrumentQuantity']
             print("Came from JS to start All")
-            if instruments_quantity:
+            if instrument_quantity:
                 algo_array = models.AlgoWatchlist.objects.all()
                 print(len(algo_array))
                 for items in algo_array:
                     print("Starting for all items: ", items.instruments)
                     models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(startAlgo=True)
-                    models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=instruments_quantity)
+                    models.AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=instrument_quantity)
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "Started for all Algowatch items"
@@ -331,7 +333,7 @@ class StartAllAPI(APIView):
             return Response(response)
 
 class BuySingleManualAPI(APIView):
-    """ Send Intrument name (TCS) and quantity  in the parameter POST 
+    """ Send Intrument name (TCS) and quantity  in the request.body as a json response  
     {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
@@ -346,13 +348,14 @@ class BuySingleManualAPI(APIView):
             response["data"] = "User not Authenticated..Please log in "
             return Response(response)
         try:
-            instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity") 
-            if instruments_name and instruments_quantity:
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="BUY")
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isBuyClicked=True)            
+            params = json.loads(request.body)               
+            instrument_name = params['instrument']
+            instrument_quantity = params['instrumentQuantity']
+            if instrument_name and instrument_quantity:
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="BUY")
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isBuyClicked=True)            
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "Bought Single Instument for Manualwatch"
@@ -370,7 +373,7 @@ class BuySingleManualAPI(APIView):
         
         
 class SellSingleManualAPI(APIView):
-    """ Send Intrument name (TCS) and quantity  in the parameter POST 
+    """ Send Intrument name (TCS) and quantity  in the request.body as a json response 
     {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
@@ -385,13 +388,15 @@ class SellSingleManualAPI(APIView):
             response["data"] = "User not Authenticated..Please log in "
             return Response(response)
         try:         
-            instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity") 
-            if instruments_name and instruments_quantity:
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(startAlgo=True)
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(positionType="SELL")
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
-                models.ManualWatchlist.objects.filter(instruments=instruments_name).update(isSellClicked=True)            
+            params = json.loads(request.body) 
+            instrument_name = params['instrument']
+            instrument_quantity = params['instrumentQuantity']
+
+            if instrument_name and instrument_quantity:
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="SELL")
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isSellClicked=True)            
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "sold Manual watchlist instrument item"
@@ -409,11 +414,11 @@ class SellSingleManualAPI(APIView):
        
         
 class ScaleUpQtyAPI(APIView):
-    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
-        "is_algo": true // means manual instrument will be automaticly set to false
+        "is_algo": true // means manual instrument will be automaticaly set to false
     }
     
     """
@@ -425,16 +430,17 @@ class ScaleUpQtyAPI(APIView):
             response["data"] = "User not Authenticated..Please log in "
             return Response(response)
         try:
-            instruments_name = request.POST.get("instrument")   
-            instruments_quantity = request.POST.get("instrumentQuantity") 
-            is_algo = request.POST.get("is_algo") 
+            params = json.loads(request.body) 
+            instrument_name = params['instrument']
+            instrument_quantity = params['instrumentQuantity']
+            is_algo = params["is_algo"]
             
-            if instruments_name and instruments_quantity and is_algo:
-                print("Updated QTY ===========+++++++", instruments_name, instruments_quantity, is_algo)
+            if instrument_name and instrument_quantity and is_algo:
+                print("Updated QTY ===========+++++++", instrument_name, instrument_quantity, is_algo)
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    models.AlgoWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
                 else:
-                    models.ManualWatchlist.objects.filter(instruments=instruments_name).update(qty=instruments_quantity)                
+                    models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)                
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "scaled up quantity for algowatch/manualwatch list"
@@ -451,11 +457,11 @@ class ScaleUpQtyAPI(APIView):
             return Response(response)
 
 class ScaleDownQtyAPI(APIView):
-    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     {
         "instrument":"TCS", // Trading Symbol
         "instrumentQuantity":1,
-        "is_algo": true // means manual instrument will be automaticly set to false
+        "is_algo": true // means manual instrument will be automaticaly set to false
     }
     
     """
@@ -495,17 +501,17 @@ class ScaleDownQtyAPI(APIView):
 
 ## Ahithi baki 6e API banavva ni
 class LiveSearchAndAddInstrumentAPI(APIView):
-    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     @param: "instument"
     @param: "is_algo"
     {
         "instrument":"TCS", // Trading Symbol
-        "is_algo": true // means manual instrument will be automaticly set to false
+        "is_algo": true // means manual instrument will be automaticaly set to false
     }
     
     {
         "instrument":"T", // Trading Symbol starting with T
-        "is_algo": true // means manual instrument will be automaticly set to false
+        "is_algo": true // means manual instrument will be automaticaly set to false
     } // It will send all the instruments trading symbol starting from letter T
     """
     def post(self,request):
@@ -517,7 +523,6 @@ class LiveSearchAndAddInstrumentAPI(APIView):
             return Response(response)
         try:
             params = json.loads(request.body)             
-            print("Came from JS to Add Instrument ==============" + params['instrument'])
             instrument_name = params['instrument']
             is_algo = params['is_algo']
             if instrument_name and is_algo:
@@ -548,10 +553,10 @@ class LiveSearchAndAddInstrumentAPI(APIView):
             return Response(response)
             
 class DeleteInstrumentAPI(APIView):
-    """ Send Intrument name (TCS) ,quantity and is_algo in the parameter POST 
+    """ Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     {
         "instrument":"TCS", // Trading Symbol
-        "is_algo": true // means manual instrument will be automaticly set to false
+        "is_algo": true // means manual instrument will be automaticaly set to false
     }
     
     """
