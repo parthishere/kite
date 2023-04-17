@@ -37,7 +37,7 @@ def updateSubscriberList(token, tradingSymbol, isSubscribe):
         subscriberlist[int(token)] = tradingSymbol
     else:
         if len(subscriberlist) > 0:
-            subscriberlist.pop(int(token))
+            subscriberlist.pop(int(token), None)
 
 
 def updatePostions(positionsdict):
@@ -61,8 +61,10 @@ def getSlHits():
 
 
 def updatePNL(pnlValue):
-    # print("PNLValue = ",pnlValue)
-    updatedPNL["pnl"] = pnlValue
+    pnl_value = "+{}".format(round(pnlValue,2)) if pnlValue > 0 else round(pnlValue,2)
+    # print("PNLValue = ",pnl_value)
+    updatedPNL["pnl"] = str(pnl_value)
+    print(updatedPNL)
 
 
 def startLiveConnection(token):
@@ -103,9 +105,9 @@ def on_ticks(ws, ticks):
         # coreLogic(liveData)
         # print("Checking live data")
         # logging.warning('Live data in orders===== %s',stock['last_price'])
-        # print(liveData, "+++++============++++++")
+        #print(liveData, "+++++============++++++")
 
-        # print(liveData)
+        #print(liveData)
         # manualArray = ManualWatchlist.objects.all()
 
         # print("HERE")
@@ -154,9 +156,10 @@ class MyAsyncConsumer(AsyncConsumer):
             await asyncio.sleep(1)
             valDict["liveData"] = liveData
             valDict["position"] = newPositionsdict['new']
-            valDict["totalpnl"] = updatedPNL.get('pnl', 0)
+            valDict["totalpnl"] = updatedPNL.get('pnl')
             valDict['slHits'] = await getSlHits()
             # counter+=1
+            # print(valDict)
             await self.send({
                 'type': 'websocket.send',
                 'text': json.dumps(valDict)

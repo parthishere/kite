@@ -53,7 +53,7 @@ function autocomplete(inp, arr) {
                             <td >${instrument.entryprice}</td>
                             <td id='${instrument.instruments}ltp'>2</td>
                             <td id='${instrument.instruments}slhit'>${instrument.slHitCount}</td>
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                            <td><input type="number" onchange="onQtyChange(this, '${instrument.instruments}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
                             <td style="color: green; font-weight:bold">Algo Started</td>
@@ -67,10 +67,10 @@ function autocomplete(inp, arr) {
                             <td >${instrument.entryprice}</td>
                             <td id='${instrument.instruments}ltp'>2</td>
                             <td id='${instrument.instruments}slhit'>${instrument.slHitCount}</td>
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
-                            <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
-                            <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
-                            <td><a href="#" class="btn btn-success" onclick="startAlgo('${instrument.instruments}')"><span> Start Algo</span></a></td>
+                            <td><input type="number" onchange="onQtyChange(this, '${instrument.instruments}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                            <td style="text-align: center;"><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
+                            <td style="text-align: center;"><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
+                            <td style="color: green; font-weight:bold;text-align: center;" id="startalgobtn-${instrument.instruments}"><a href="#" class="btn btn-success" onclick="startAlgo('${instrument.instruments}')"><span> Start Algo</span></a></td>
                             <td><a href="#" class="delete" onclick="deleteInstrument('${instrument.instruments}');"><i class="material-icons" data-toggle="tooltip" title="Delete">&#xe872;</i></a></td>
                         </tr>`
                 }
@@ -79,12 +79,11 @@ function autocomplete(inp, arr) {
                 document.getElementById('instrumentDiv').innerHTML = instrumentDivData
                 //instrumentDiv.innerHtml += 
 
-
-
               }
             });
           }
           else if (watchFlag == "ManualWatch") {
+           
             $.ajax({
               type: "POST",
               url: 'addInstrument',
@@ -101,7 +100,7 @@ function autocomplete(inp, arr) {
                               <td id='${instrument.instruments}op'>0</td>
                               <td id='${instrument.instruments}ltp'>2</td>
                               <td id='${instrument.instruments}slhit'>${instrument.slHitCount}</td>
-                              <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                              <td><input type="number" onchange="onQtyChange(this, '${instrument.instruments}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
                               <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
                               <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
                               <td style="color: green; font-weight:bold">Open Position</td>
@@ -116,7 +115,7 @@ function autocomplete(inp, arr) {
                               <td id='${instrument.instruments}op'>0</td>
                               <td id='${instrument.instruments}ltp'>2</td>
                               <td id='${instrument.instruments}slhit'>${instrument.slHitCount}</td>
-                              <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                              <td><input type="number" onchange="onQtyChange(this, '${instrument.instruments}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
                               <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
                               <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
                               <td style="color: green; font-weight:bold">-</td>
@@ -132,7 +131,7 @@ function autocomplete(inp, arr) {
                               <td id='${instrument.instruments}op'>0</td>
                               <td id='${instrument.instruments}ltp'>2</td>
                               <td id='${instrument.instruments}slhit'>${instrument.slHitCount}</td>
-                              <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                              <td><input type="number" onchange="onQtyChange(this, '${instrument.instruments}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
                               <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
                               <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
                               <td style="color: green; font-weight:bold">-</td>
@@ -148,7 +147,7 @@ function autocomplete(inp, arr) {
                             <td id='${instrument.instruments}op'>0</td>
                             <td id='${instrument.instruments}ltp'>2</td>
                             <td id='${instrument.instruments}slhit'>${instrument.slHitCount}</td>
-                            <td><input type="number" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
+                            <td><input type="number" onchange="onQtyChange(this, '${instrument.instruments}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="${instrument.instruments}"  placeholder='Enter Qty' class="form-control" value = "${instrument.qty}"/></td>
                             <td><a href="#" class="btn btn-info"  title="Click to scale up qty" onclick="ScaleUpQty('${instrument.instruments}')"><span> Scale Up</span></a></td>
                             <td><a href="#" class="btn btn-warning" title="Click to scale down qty" onclick="ScaleDownQty('${instrument.instruments}')"><span> Scale Down</span></a></td>
                             <td><a href="#" class="btn btn-success" title="Click to buy" onclick="BuyOrder('${instrument.instruments}')"><span> Buy</span></a></td>
@@ -262,22 +261,29 @@ function getBaseQty(instrument) {
   return qty;
 }
 
+function updateQty(script, qty) {
+  let searchElement = document.getElementById('myInput');
+  let isFromAlgoTest = searchElement.className === 'AlgoWatch' ? "True" : "False";
+  $.ajax({
+    type: "POST",
+    url: 'scaleUpQty',
+    data: { csrfmiddlewaretoken: getCSRFToken(), script: script, scriptQty: qty, isFromAlgoTest },
+    success: function callback(response) {
+      console.log(response);
+    }
+  });
+}
+
 function onQtyChange(element, instrument) {
   baseQty[instrument] = parseInt(element.value);
+  updateQty(instrument, baseQty[instrument]);
 }
 
 function ScaleUpQty(clicked) {
   var qty = parseInt(document.getElementById(clicked).value);
   var multipleQty = qty + getBaseQty(clicked);
   document.getElementById(clicked).value = multipleQty;
-  $.ajax({
-    type: "POST",
-    url: 'scaleUpQty',
-    data: { csrfmiddlewaretoken: getCSRFToken(), script: clicked, scriptQty: multipleQty, isFromAlgoTest: "True" },
-    success: function callback(response) {
-      console.log(response);
-    }
-  });
+  updateQty(clicked, multipleQty);
 }
 
 function ScaleDownQty(clicked) {
@@ -288,12 +294,5 @@ function ScaleDownQty(clicked) {
   } else {
     return;
   }
-  $.ajax({
-    type: "POST",
-    url: 'scaleDownQty',
-    data: { csrfmiddlewaretoken: getCSRFToken(), script: clicked, scriptQty: multipleQty, isFromAlgoTest: "True" },
-    success: function callback(response) {
-      console.log(response);
-    }
-  });
+  updateQty(clicked, multipleQty);
 }

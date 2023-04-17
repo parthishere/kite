@@ -58,13 +58,17 @@ $(document).ready(function(){
                 </div>
                 <table class="table table-bordered table-hover">
                     <thead>
-                        <tr>
-                            <th scope="col">Time</th>
-                            <th scope="col">Instruments</th>
-                            <th scope="col">Open Price</th>
-                            <th scope="col">LTP</th>
+                        <tr  style="text-align:center; font-size: medium;">
+                            <th scope="col" style="width:6%;">Time</th>
+                            <th scope="col" style="width:10%; text-align: left;">Instruments</th>
+                            <th scope="col" style="width:6%;">Open</th>
+                            <th scope="col" style="width:6%;">High</th>
+                            <th scope="col" style="width:6%;">Low</th>
+                            <th scope="col" style="width:6%;">Close</th>
+                            <th scope="col" style="width:6%;">Entry</th>
+                            <th scope="col" style="width:6%;">LTP</th>
                             <th scope="col">SL Hit</th>
-                            <th scope="col">Qty</th>
+                            <th scope="col" style="width:8%">Qty</th>
                             <th scope="col">Scale Up</th>
                             <th scope="col">Scale Down</th>
                             <th scope="col">Buy</th>
@@ -74,11 +78,16 @@ $(document).ready(function(){
                     </thead>
                     <tbody id="instrumentDiv">
                         {% for instrument in manualWatchlistArray %}
-                        <tr id="{{instrument.instruments}}_main">
+                        <tr id="{{instrument.instruments}}_main" style="text-align: center;">
                             <td id="{{instrument.instruments}}time">{%if instrument.algoStartTime%}{{instrument.algoStartTime|convert_to_ist|time_only}}{%else%}-{%endif%}</td>
-                            <td>{{instrument.instruments}}</td>
-                            <td id="{{instrument.instruments}}op">0</td>
-                            <td id='{{instrument.instruments}}ltp'>2</td>
+                            <td style="text-align: left;">{{instrument.instruments}}</td>
+                            <td id='{{instrument.instruments}}op' style="color: red;">0</td>
+                            <td id='{{instrument.instruments}}hi'>0</td>
+                            <td id='{{instrument.instruments}}lo'>0</td>
+                            <td id='{{instrument.instruments}}cl'>0</td>
+                            <td>{{instrument.entryprice}}</td>
+                            {% comment %} <td>{{instrument.lastTradedPrice}}</td> {% endcomment %}
+                            <td id='{{instrument.instruments}}ltp'  style="color: red;" >{{instrument.lastTradedPrice}}</td>
                             <td id="{{instrument.instruments}}slhit">{{instrument.slHitCount}}</td>
                             {% if  instrument.exchangeType == "NFO" %}
                                 <td><input type="number" onchange="onQtyChange(this, '{{instrument.instruments}}')" oninput="this.value=(parseInt(this.value)||1)" pattern="[0-9]" name='qty[]' id="{{instrument.instruments}}"  placeholder='Enter Qty' class="form-control" value = {{instrument.qty}} disabled="disabled"></td>
@@ -123,28 +132,43 @@ $(document).ready(function(){
                 </div>
                 <table class="table table-bordered table-hover">
                     <thead>
-                        <tr>
-                            <th scope="col">Instruments</th>
-                            <th scope="col" id='ordertypecol'>Order Type</th>
-                            <th scope="col">Qty</th>
-                            <th scope="col">Entry Price</th>
-                            <th scope="col">LTP</th>
-                            <th scope="col">Average Price</th>
+                        <tr style="text-align: center; font-size: medium;">
+                            <th scope="col" style="width: 15%; text-align: left;">Instruments</th>
+                            <th scope="col" style="width: 8%;" id='ordertypecol'>Type</th>
+                            <th scope="col" style="width: 5%;">Qty</th>
+                            <th scope="col" style="width: 10%;">Entry</th>
+                            <th scope="col" style="width: 10%;">LTP</th>
+                            <th scope="col" style="width: 10%;">Average</th>
                             {% comment %} <th scope="col">Unrealised</th> {% endcomment %}
                             {% comment %} <th scope="col">Realised</th> {% endcomment %}
-                            <th scope="col">Actions</th>
-                            <th scope="col">PNL</th>
+                            <th scope="col" style="width: 10%;">EXIT 50%</th>
+                            <th scope="col" style="width: 10%;">Actions</th>
+                            <th scope="col" style="width: 10%;">PNL</th>
+                            <th scope="col" style="width: 10%;">%</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for position in positionArray %}
-                        <tr>
-                            <td>{{position.instruments}}</td>
-                            <td id="{{position.instruments}}ordertype">{{position.positionType}}</td>
+                        <tr style="text-align: center;">
+                            <td style="text-align: left;"><strong>{{position.instruments}}</strong></td>
+                            {% if  position.positionType == 'BUY' %}
+                                <td id="{{position.instruments}}ordertype" style="color: green; font-weight:bold;">{{position.positionType}}</div> </td>
+                            {% else %}
+                                <td id="{{position.instruments}}ordertype" style="color: red; font-weight:bold;" >{{position.positionType}}</div></td>
+                            {% endif %}
                             <td id="{{position.instruments}}qty">{{position.qty}}</td>
                             <td id="{{position.instruments}}entryPrc">{{position.entryprice}}</td>
                             <td id="{{position.instruments}}ltp">1</td>
                             <td id="{{position.instruments}}avgTrde">{{position.avgTradedPrice}}</td>
+
+                            {% if  position.qty == 0 %}
+                            <td style="color: black; font-weight:bold">Closed</td>
+                            {% else %}
+                            <td id="{{position.instruments}}-exitBtn" class="{{position.instruments}}-halfBtn">
+                                <a href="#" class="btn btn-danger" onclick="halfAlgo_manual('{{position.instruments}}','{{position.qty}}')"><span> Exit 50%</span></a>
+                            </td>
+                            {% endif %}
+
                             {% if  position.qty == 0 %}
                                 <td style="color: black; font-weight:bold">Closed</td>
                             {% else %}
@@ -153,27 +177,28 @@ $(document).ready(function(){
                                 </td>
                             {% endif %} 
                             {% if  position.pnl > 0 %}
-                                <td id="{{position.instruments}}pnl" style="color: green; font-weight:bold">{{position.pnl}}</td>
+                            <td id="{{position.instruments}}pnl" style="color: green; font-weight:bold;font-size:17px ">{{position.pnl}}</td>
                             {% else %}
-                                <td id="{{position.instruments}}pnl" style="color: red; font-weight:bold">{{position.pnl}}</td>
-                            {% endif %}   
+                                <td id="{{position.instruments}}pnl" style="color: red; font-weight:bold;font-size:17px ">{{position.pnl}}</td>
+                            {% endif %}
+                            <td id="{{position.instruments}}last_price" style="color: red; font-weight:bold;font-size:17px ">{{position.last_price}}</td> 
                              
                         </tr>
                         {% endfor %}
                         <tr>
-                            <td><span style="font-weight:bold">Total</span></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
+                            <td></td>
+                            <td style="font-weight:bold; font-size:25px; text-align: center; ">Total</td>
                             {% if  totalPNL > 0 %}
-                                <td id="totalpnl" style="color: green; font-weight:bold">{{totalPNL}}</td>
+                                <td id="totalpnl" style="color: green; font-weight:bold ; font-size:25px; text-align: center; ">{{totalPNL}}</td>
                             {% else %}
-                                <td id="totalpnl" style="color: red; font-weight:bold">{{totalPNL}}</td>
-                            {% endif %}   
-                            
+                                <td id="totalpnl" style="color: red; font-weight:bold ; font-size:25px; text-align: center; ">{{totalPNL}}</td>
+                            {% endif %}    
                         <tr>
                     </tbody>
                 </table>
@@ -227,6 +252,37 @@ $(document).ready(function(){
                     }
              });
         }
+
+        function halfAlgo_manual(clicked, qty){
+            console.log("Stop clicked")
+            var stokQty = 0;
+            var scriptQty1 = parseInt(document.getElementById(clicked).value);
+            $.ajax({
+                type: "POST",
+                url: 'halfAlgo_manual',
+                data: { csrfmiddlewaretoken: '{{ csrf_token }}', script: clicked, scriptQty: scriptQty1, isFromAlgoTest: "true" },
+                success: function callback(response){
+                    if (response === "success"){
+                        //$('.'+clicked+'-halfBtn').text('Closed');
+        
+                        //var newValue = scriptQty1.replace('-', '');
+                        var newValueqty = parseInt($('#'+clicked+'qty').text());
+                       // alert($('#'+clicked+'qty').text());
+                       // qty.text( newValue );
+                        if(newValueqty == 0){
+                            var dynClass=clicked+'-halfBtn';
+                            //$('[class='+dynClass+']').text('Closed');
+                            $('.'+dynClass).text('Closed');
+                            var dynId=clicked+'-exitBtn';
+                            $('[id='+dynId+']').text('Closed');
+                        }
+                        //window.location.reload();
+                        }
+                    }
+             });
+        }
+
+
         </script>
 
 {% endblock body %}

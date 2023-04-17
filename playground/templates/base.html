@@ -11,7 +11,7 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-          <a class="navbar-brand" href="#">OpenAlgo</a>
+          <a class="navbar-brand" href="#"><strong>ATM Algo</strong></a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -20,14 +20,21 @@
               {% block NavbarComp %}{% endblock NavbarComp %}
             </ul>
             <ul id="default-instruments" class="mb-2 me-auto">
-              <li>
-                <span id="NIFTY 50defaultltp">Loading...</span>
-                <span>NIFTY 50</span>
-              </li>
-              <li>
-                <span id="NIFTY BANKdefaultltp">Loading...</span>
-                <span>NIFTY BANK</span>
-              </li>
+              <div style="font-size: larger; background-color: white; padding-left:  10px; padding-right: 10px;">
+
+                <span class="text-dark">NIFTY 50: </span>
+                <span id="NIFTY 50defaultltp"  style="font-weight:bold;font-size:20px; " >Loading...</span>
+
+                <span class="text-dark"><strong style="font-size: 20px;">/ </strong> Open: </span>
+                <span id="NIFTY 50defaultopen"  style="color: black; font-weight:bold;font-size:20px " >Loading...</span>
+                
+                <span class="text-dark" style="margin-left: 60px;">NIFTY BANK: </span>
+                <span id="NIFTY BANKdefaultltp"  style="font-weight:bold;font-size:20px; " >Loading...</span>
+
+                <span class="text-dark" ><strong style="font-size: 20px;">/ </strong> Open: </span>
+                <span id="NIFTY BANKdefaultopen"  style="color: black; font-weight:bold;font-size:20px " >Loading...</span>
+                
+              </div>
             </ul>
             <form class="d-flex" action = '/logout'>
               {% comment %} <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"> {% endcomment %}
