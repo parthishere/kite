@@ -9,7 +9,7 @@ from .. import views
 import pyotp
 from .. import models
 from . import serializers
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..views import coreLogic,login_in_zerodha,updateSubscriberList,instrumentObjectToManualWatchlistObject,instrumentObjectToAlgoWatchlistObject
 import pyotp
 from .. import models
@@ -38,8 +38,22 @@ def login_view(request):
             request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
         kite.set_access_token(data["access_token"])
         logging.warning("Access token===== %s", data["access_token"])
+        
         consumers.startLiveConnection(str(kite.access_token))
         coreLogic()
+        
+        TimeObjData = models.DateTimeCheck.objects.all()
+        if TimeObjData.exists():
+            TimeObj = TimeObjData.first()
+            todayDate = (datetime.now() + timedelta(hours=5, minutes=30)).date()
+            if TimeObj.dateCheck != todayDate:
+                TimeObjData.update(dateCheck=todayDate)
+                views.clearAllData()
+                views.fetchInstrumentInBackground()
+        algoWatchlistArray = models.AlgoWatchlist.objects.all()
+        manualWatchlistArray = models.ManualWatchlist.objects.all()
+        views.updateSavedSubscriberList(algoWatchlistArray.values())
+        views.updateSavedSubscriberList(manualWatchlistArray.values())
         response['error'] = 0
         response['status'] = "success"
         response["data"] = "User Authenticated."
@@ -137,22 +151,51 @@ def OrdersApi(reqeust):
         response['status'] = "error"
         response["data"] = "User not Authenticated..Please log in"
         return Response(response) 
-    orders_qs = models.Orders.objects.all()
-    order_json = serializers.OrderSerializer(orders_qs,many=True).data
+    orders = kite.orders()
+
+    for order in orders:
+        print(order)
+        if not views.order_exists(order['order_id']):
+            orderObject = models.Orders(instruments=order['tradingsymbol'], qty=order['quantity'],
+                                 status=order['status'], avgTradedPrice=order['average_price'], instrumentsToken=order['instrument_token'],
+                                 orderTimestamp=order['order_timestamp'], orderType=order[
+                                     'order_type'], transactionType=order['transaction_type'],
+                                 product=order['product'], orderId=order['order_id'])
+            orderObject.save()
+    order_json = serializers.OrderSerializer(models.Orders.objects.all(),many=True).data
     return Response({"error":0,"status":"success","data":{"orders":order_json}})
 
 
-class SearchInstrumentsAPI(ListAPIView):
-    serializer_class = serializers.SearchInstrumentsSerializer
-    queryset = models.Instruments.objects.all()
-    filter_backends = [filters.SearchFilter]
-    search_fields = ["tradingsymbol"]
 
 
-class SettingsView(RetrieveUpdateAPIView):
-    serializer_class = serializers.PreferencesSerializer
-    queryset = models.Preferences.objects.first()
-    permission_classes = [CustomPermission, AllowAny]
+def SettingsView(request):
+    response = {'error':0,'status':'', "data":""}
+    if not kite.access_token:
+        response['error'] = 1
+        response['status'] = "error"
+        response["data"] = "User not Authenticated..Please log in"
+        return Response(response)
+
+    if request.method == "POST":
+        time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
+        stoploss = request.POST.get('stoploss')
+        target = request.POST.get('target')
+        scaleupqty = request.POST.get('scaleupqty')
+        scaledownqty = request.POST.get('scaledownqty')
+        openingrange = request.POST.get('openingrange')
+        openingrangebox = request.POST.get('openingrangebox')
+        if views.settings_exists():
+            models.Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
+                                                                    scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+        else:
+            settings = models.Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
+                                   scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+            settings.save()
+        'Preference updated successfully!'
+        return Response("")
+    else:
+        settingsValues = models.Preferences.objects.all()
+        return Response("")
     
     # if not kite.access_token :
     #     return Response({"Data": "User not Authenticated..Please log in "})
@@ -225,7 +268,7 @@ class StartAlgoSingleAPI(APIView):
     example:
     
     "instrument":"TCS", // Trading Symbol
-    "instrumentQuantity":1,
+    "instrumentQuantity":1, // int
     
     """
     def post(self,request):
@@ -242,8 +285,10 @@ class StartAlgoSingleAPI(APIView):
             if instrument_name and instrument_quantity: 
                 print(instrument_name)  
                 # print("Came from JS to start" + params['instruments'])            
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)     
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0)
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, algoStartTime=datetime.utcnow())
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+               
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -335,6 +380,9 @@ class StopAlgoAndManualSingleAPI(APIView):
             response['status'] = "error"
             response["data"] = str(e)
             return Response(response)
+
+
+
 
 
 class StartAllAPI(APIView):
