@@ -220,33 +220,40 @@ def SettingsView(request):
         response["data"] = "User not Authenticated..Please log in"
         return Response(response)
 
-    if request.method == "POST":
-        request.body
-        time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
-        stoploss = request.POST.get('stoploss')
-        target = request.POST.get('target')
-        scaleupqty = request.POST.get('scaleupqty')
-        scaledownqty = request.POST.get('scaledownqty')
-        openingrange = request.POST.get('openingrange')
-        openingrangebox = request.POST.get('openingrangebox')
-        if views.settings_exists():
-            models.Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
-                                                                    scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+    try:
+        if request.method == "POST":
+            params = json.loads(request.body)
+            time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
+            stoploss = params.get('stoploss')
+            target = params.get('target')
+            scaleupqty = params.get('scaleupqty')
+            scaledownqty = params.get('scaledownqty')
+            openingrange = params.get('openingrange')
+            openingrangebox = params.get('openingrangebox')
+            if views.settings_exists():
+                models.Preferences.objects.filter(scriptName="Default").update(time=time, stoploss=stoploss, target=target,
+                                                                        scaleupqty=scaleupqty, scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+            else:
+                settings = models.Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
+                                    scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
+                settings.save()
+            
+            response['error'] = 0
+            response['status'] = "success"
+            response["data"] = 'Preference updated successfully!'
+            return Response(response)
         else:
-            settings = models.Preferences(scriptName="Default", time=time, stoploss=stoploss, target=target, scaleupqty=scaleupqty,
-                                   scaledownqty=scaledownqty, openingrange=openingrange, openingrangebox=openingrangebox)
-            settings.save()
+            settingsValues = models.Preferences.objects.all()
+            json_data = serializers.PreferencesSerializer(settingsValues).data
+            response['error'] = 0
+            response['status'] = "success"
+            response["data"] = {"settings":json_data}
+            return Response(response)
         
-        response['error'] = 0
-        response['status'] = "success"
-        response["data"] = 'Preference updated successfully!'
-        return Response(response)
-    else:
-        settingsValues = models.Preferences.objects.all()
-        json_data = serializers.PreferencesSerializer(settingsValues).data
-        response['error'] = 0
-        response['status'] = "success"
-        response["data"] = {"settings":json_data}
+    except Exception as e:
+        response['error'] = 1
+        response['status'] = "error"
+        response["data"] = str(e)
         return Response(response)
     
     # if not kite.access_token :
