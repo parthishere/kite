@@ -872,109 +872,189 @@ def position_exists(tradingsymbol):
 
 
 
-def stopSinglehalf(request):  # For Manual and Algo watchlist
+def stopSinglehalfAPI(request):  # For Manual and Algo watchlist
+    """ Send Intrument name (TCS) in the request.body as a json response 
+    @param: "instument"
+    
+    const data = {
+        "instrument":"TCS", // Trading Symbol
+        "
+    }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
 
-    # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
-    algoArray = models.AlgoWatchlist.objects.all()
-    # print(algoArray, "++++++++++++++++Algo Array Values=============")
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    
+    """
+    response = {'error':0,'status':'', "data":""}
+    if not kite.access_token :
+        response['error'] = 1
+        response['status'] = "error"
+        response["data"] = "User not Authenticated..Please log in "
+        return Response(response) 
+    try:
+        params = json.loads(request.body)
+        # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
+        algoArray = models.AlgoWatchlist.objects.all()
+        # print(algoArray, "++++++++++++++++Algo Array Values=============")
 
-    # Get value from Settings
-    settings = models.Preferences.objects.all()
-    # TG : Get % value from settings
-    tg = settings.values()[0]['target']
-    # SL : Get % value from settings
-    sl = settings.values()[0]['stoploss']
-    # TIME : Get seconds value from settings
-    startTime = settings.values()[0]['time']
-    # OR : Get % value from settings and of difference from CMP to OPEN
-    ordp = settings.values()[0]['openingrange']
-    # ORD :  Get true of fale from Settings to apply ORD or not
-    ordtick = settings.values()[0]['openingrangebox']
-    # 1. Run a loog for all watchlist items
+        # Get value from Settings
+        settings = models.Preferences.objects.all()
+        # TG : Get % value from settings
+        tg = settings.values()[0]['target']
+        # SL : Get % value from settings
+        sl = settings.values()[0]['stoploss']
+        # TIME : Get seconds value from settings
+        startTime = settings.values()[0]['time']
+        # OR : Get % value from settings and of difference from CMP to OPEN
+        ordp = settings.values()[0]['openingrange']
+        # ORD :  Get true of fale from Settings to apply ORD or not
+        ordtick = settings.values()[0]['openingrangebox']
+        # 1. Run a loog for all watchlist items
 
-    acriptttt = request.POST['script']
+        acriptttt = params['instrument']
 
-    if acriptttt in consumers.liveData:
-        liveValues = consumers.liveData[acriptttt]
-        # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
-        partValue = (ordp*liveValues['Open'])/100
-        ubl = liveValues['Open'] + partValue
-        # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
-        lbl = liveValues['Open'] - partValue
+        if acriptttt in consumers.liveData:
+            liveValues = consumers.liveData[acriptttt]
+            # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+            partValue = (ordp*liveValues['Open'])/100
+            ubl = liveValues['Open'] + partValue
+            # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+            lbl = liveValues['Open'] - partValue
 
-    postions = models.Positions.objects.filter(instruments=acriptttt)
-    potionObject = postions.values()[0]
-    setQty = abs(potionObject['qty'])
-    print('..........................setQty......... 1' , setQty)
-    if -1<=setQty<=1:
-        setQty = setQty
-    else:
-        setQty = int(setQty/2)
-    print('..........................setQty......... 2' , setQty)
+        postions = models.Positions.objects.filter(instruments=acriptttt)
+        potionObject = postions.values()[0]
+        setQty = abs(potionObject['qty'])
+        print('..........................setQty......... 1' , setQty)
+        if -1<=setQty<=1:
+            setQty = setQty
+        else:
+            setQty = int(setQty/2)
+        print('..........................setQty......... 2' , setQty)
 
-    if potionObject['positionType'] == "BUY":
-        print(setQty,'SCRIPT QUANTITY=========================', 'BUY')
-        views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
-                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
-    if potionObject['positionType'] == "SELL":
-        print(setQty,'SCRIPT QUANTITY=========================', 'SELL')
-        views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
-                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+        if potionObject['positionType'] == "BUY":
+            print(setQty,'SCRIPT QUANTITY=========================', 'BUY')
+            views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                    ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+        if potionObject['positionType'] == "SELL":
+            print(setQty,'SCRIPT QUANTITY=========================', 'SELL')
+            views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                    ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
 
-    return Response("success")
+        response['error'] = 0
+        response['status'] = "success"
+        response["data"] = "Removed instrument from algowatch/manualwatch"
+        return Response(response)
+    except Exception as e:
+        response['error'] = 1
+        response['status'] = "error"
+        response["data"] = str(e)
+        return Response(response)
 
 
-def stopSinglehalf_halfAlgo_manual(request):  # For Manual and Algo watchlist
+def stopSinglehalf_halfAlgo_manualAPI(request):  # For Manual and Algo watchlist
+    """ Send Intrument name (TCS) in the request.body as a json response 
+    @param: "instument"
+    
+    const data = {
+        "instrument":"TCS", // Trading Symbol
+    }
+    
+    fetch("URI", {
+        method:"POST",
+        headers: {
+            "Content-Type":"application/json"
+        },
+        body: JSON.stringyfy(data)
+    })
+    
+    .then(response => response.json())
+    
 
-    # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
-    algoArray = models.ManualWatchlist.objects.all()
-    # print(algoArray, "++++++++++++++++Algo Array Values=============")
+    
+    example:
+    
+    "instrument":"TCS", // Trading Symbol
+    
+    
+    """
+    response = {'error':0,'status':'', "data":""}
+    if not kite.access_token :
+        response['error'] = 1
+        response['status'] = "error"
+        response["data"] = "User not Authenticated..Please log in "
+        return Response(response) 
+    try:
+        params = json.loads(request.body)
+        
+        # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
+        algoArray = models.ManualWatchlist.objects.all()
+        # print(algoArray, "++++++++++++++++Algo Array Values=============")
 
-    # Get value from Settings
-    settings = models.Preferences.objects.all()
-    # TG : Get % value from settings
-    tg = settings.values()[0]['target']
-    # SL : Get % value from settings
-    sl = settings.values()[0]['stoploss']
-    # TIME : Get seconds value from settings
-    startTime = settings.values()[0]['time']
-    # OR : Get % value from settings and of difference from CMP to OPEN
-    ordp = settings.values()[0]['openingrange']
-    # ORD :  Get true of fale from Settings to apply ORD or not
-    ordtick = settings.values()[0]['openingrangebox']
-    # 1. Run a loog for all watchlist items
+        # Get value from Settings
+        settings = models.Preferences.objects.all()
+        # TG : Get % value from settings
+        tg = settings.values()[0]['target']
+        # SL : Get % value from settings
+        sl = settings.values()[0]['stoploss']
+        # TIME : Get seconds value from settings
+        startTime = settings.values()[0]['time']
+        # OR : Get % value from settings and of difference from CMP to OPEN
+        ordp = settings.values()[0]['openingrange']
+        # ORD :  Get true of fale from Settings to apply ORD or not
+        ordtick = settings.values()[0]['openingrangebox']
+        # 1. Run a loog for all watchlist items
 
-    acriptttt = request.POST['script']
+        acriptttt = params['instrument']
 
-    if acriptttt in consumers.liveData:
-        liveValues = consumers.liveData[acriptttt]
-        # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
-        partValue = (ordp*liveValues['Open'])/100
-        ubl = liveValues['Open'] + partValue
-        # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
-        lbl = liveValues['Open'] - partValue
+        if acriptttt in consumers.liveData:
+            liveValues = consumers.liveData[acriptttt]
+            # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+            partValue = (ordp*liveValues['Open'])/100
+            ubl = liveValues['Open'] + partValue
+            # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+            lbl = liveValues['Open'] - partValue
 
-    postions = models.Positions.objects.filter(instruments=acriptttt)
-    potionObject = postions.values()[0]
-    setQty = abs(potionObject['qty'])
-    print('..........................setQty......... 1' , setQty)
-    if -1<=setQty<=1:
-        setQty = setQty
-    else:
-        setQty = int(setQty/2)
-    print('..........................setQty......... 2' , setQty)
+        postions = models.Positions.objects.filter(instruments=acriptttt)
+        potionObject = postions.values()[0]
+        setQty = abs(potionObject['qty'])
+        print('..........................setQty......... 1' , setQty)
+        if -1<=setQty<=1:
+            setQty = setQty
+        else:
+            setQty = int(setQty/2)
+        print('..........................setQty......... 2' , setQty)
 
-    if potionObject['positionType'] == "BUY":
-        print(setQty,'SCRIPT QUANTITY=========================', 'BUY')
-        views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
-                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
-    if potionObject['positionType'] == "SELL":
-        print(setQty,'SCRIPT QUANTITY=========================', 'SELL')
-        views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
-                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+        if potionObject['positionType'] == "BUY":
+            print(setQty,'SCRIPT QUANTITY=========================', 'BUY')
+            views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                    ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+        if potionObject['positionType'] == "SELL":
+            print(setQty,'SCRIPT QUANTITY=========================', 'SELL')
+            views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                    ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
 
-   
-    return Response("success")
+        response['error'] = 0
+        response['status'] = "success"
+        response["data"] = "stopSinglehalf_halfAlgo_manualAPI"
+        return Response(response)
+    except Exception as e:
+        response['error'] = 1
+        response['status'] = "error"
+        response["data"] = str(e)
+        return Response(response)
 
 # @api_view(["GET"])
 # def getPositions():

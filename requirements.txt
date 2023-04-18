@@ -60,3 +60,4 @@ wsproto==1.2.0
 zope.interface==5.4.0
 python-dotenv
 django-cors-headers
+django-filter
