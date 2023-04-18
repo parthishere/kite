@@ -871,6 +871,111 @@ def position_exists(tradingsymbol):
     return models.Positions.objects.filter(instruments=tradingsymbol).exists()
 
 
+
+def stopSinglehalf(request):  # For Manual and Algo watchlist
+
+    # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
+    algoArray = models.AlgoWatchlist.objects.all()
+    # print(algoArray, "++++++++++++++++Algo Array Values=============")
+
+    # Get value from Settings
+    settings = models.Preferences.objects.all()
+    # TG : Get % value from settings
+    tg = settings.values()[0]['target']
+    # SL : Get % value from settings
+    sl = settings.values()[0]['stoploss']
+    # TIME : Get seconds value from settings
+    startTime = settings.values()[0]['time']
+    # OR : Get % value from settings and of difference from CMP to OPEN
+    ordp = settings.values()[0]['openingrange']
+    # ORD :  Get true of fale from Settings to apply ORD or not
+    ordtick = settings.values()[0]['openingrangebox']
+    # 1. Run a loog for all watchlist items
+
+    acriptttt = request.POST['script']
+
+    if acriptttt in consumers.liveData:
+        liveValues = consumers.liveData[acriptttt]
+        # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+        partValue = (ordp*liveValues['Open'])/100
+        ubl = liveValues['Open'] + partValue
+        # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+        lbl = liveValues['Open'] - partValue
+
+    postions = models.Positions.objects.filter(instruments=acriptttt)
+    potionObject = postions.values()[0]
+    setQty = abs(potionObject['qty'])
+    print('..........................setQty......... 1' , setQty)
+    if -1<=setQty<=1:
+        setQty = setQty
+    else:
+        setQty = int(setQty/2)
+    print('..........................setQty......... 2' , setQty)
+
+    if potionObject['positionType'] == "BUY":
+        print(setQty,'SCRIPT QUANTITY=========================', 'BUY')
+        views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+    if potionObject['positionType'] == "SELL":
+        print(setQty,'SCRIPT QUANTITY=========================', 'SELL')
+        views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+
+    return Response("success")
+
+
+def stopSinglehalf_halfAlgo_manual(request):  # For Manual and Algo watchlist
+
+    # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
+    algoArray = models.ManualWatchlist.objects.all()
+    # print(algoArray, "++++++++++++++++Algo Array Values=============")
+
+    # Get value from Settings
+    settings = models.Preferences.objects.all()
+    # TG : Get % value from settings
+    tg = settings.values()[0]['target']
+    # SL : Get % value from settings
+    sl = settings.values()[0]['stoploss']
+    # TIME : Get seconds value from settings
+    startTime = settings.values()[0]['time']
+    # OR : Get % value from settings and of difference from CMP to OPEN
+    ordp = settings.values()[0]['openingrange']
+    # ORD :  Get true of fale from Settings to apply ORD or not
+    ordtick = settings.values()[0]['openingrangebox']
+    # 1. Run a loog for all watchlist items
+
+    acriptttt = request.POST['script']
+
+    if acriptttt in consumers.liveData:
+        liveValues = consumers.liveData[acriptttt]
+        # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+        partValue = (ordp*liveValues['Open'])/100
+        ubl = liveValues['Open'] + partValue
+        # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+        lbl = liveValues['Open'] - partValue
+
+    postions = models.Positions.objects.filter(instruments=acriptttt)
+    potionObject = postions.values()[0]
+    setQty = abs(potionObject['qty'])
+    print('..........................setQty......... 1' , setQty)
+    if -1<=setQty<=1:
+        setQty = setQty
+    else:
+        setQty = int(setQty/2)
+    print('..........................setQty......... 2' , setQty)
+
+    if potionObject['positionType'] == "BUY":
+        print(setQty,'SCRIPT QUANTITY=========================', 'BUY')
+        views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+    if potionObject['positionType'] == "SELL":
+        print(setQty,'SCRIPT QUANTITY=========================', 'SELL')
+        views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType='NSE', sl=sl, tg=tg,
+                                ltp=liveValues['LTP'], scriptCode=acriptttt, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+
+   
+    return Response("success")
+
 # @api_view(["GET"])
 # def getPositions():
 #     """

@@ -23,5 +23,7 @@ urlpatterns = [
     path('deleteInstrument/', views.DeleteInstrumentAPI.as_view(), name='DeleteInstrumentAPI'),  
     path("logout", views.logoutUser, name="API-Logout"),  
     
+     path("halfAlgo", views.stopSinglehalf),
+    path("halfAlgo_manual", views.stopSinglehalf_halfAlgo_manual),
     # search
 ]

@@ -16,6 +16,8 @@ urlpatterns = [
     #Ajax function to call from script to view
     path("startAlgo", views.startSingle),
     path("stopAlgo", views.stopSingle),
+    path("halfAlgo", views.stopSinglehalf),
+    path("halfAlgo_manual", views.stopSinglehalf_halfAlgo_manual),
     path("startAll", views.startAll),
     path("stopAll", views.stopAll),
     path("buySingle", views.buySingle),
