@@ -223,7 +223,7 @@ def SettingsView(request):
     try:
         if request.method == "POST":
             params = json.loads(request.body)
-            time = datetime.strptime(request.POST.get('time'), '%H:%M:%S')
+            time = datetime.strptime(params.get('time'), '%H:%M:%S')
             stoploss = params.get('stoploss')
             target = params.get('target')
             scaleupqty = params.get('scaleupqty')
