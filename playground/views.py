@@ -38,7 +38,9 @@ import pyotp
 
 
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
-
+stop_threads = False
+timer = None
+download_thread = None
 manualWatchlistArray = []
 instrumentArray = []
 positionArray = []
@@ -226,7 +228,21 @@ def settings(request):
 
 def logoutUser(request):
     logging.warning('Logout called = %s', kite.access_token)
+    print("before token")
+    print(kite.access_token)
+    
+    global stop_threads, download_thread, timer
+    stop_threads = True
+    # if download_thread:
+    #     download_thread.join()
+    timer.cancel()
+    
     kite.invalidate_access_token()
+    kite.set_access_token(None)
+    
+    print("after token")
+    print(kite.access_token)
+    # kite.invalidate_access_token()
     return redirect("/")
 
 # =========================
@@ -249,50 +265,57 @@ def on_done():
 
 def fetchInstrumentInBackground():
     # do some stuff
+    global stop_threads, download_thread
+    stop_threads = False
     download_thread = threading.Thread(
-        target=refreshIntrumentList, name="Downloader")
+        target=refreshIntrumentList, name="Downloader", args =(lambda : stop_threads, ))
     download_thread.start()
 
 
-def refreshIntrumentList():
-    instrumentList = kite.instruments(exchange='NSE')
-    for item in instrumentList:
+def refreshIntrumentList(stop):
+    try:
+        instrumentList = kite.instruments(exchange='NSE')
+        for item in instrumentList:
 
-        instrument_token = item["instrument_token"]
-        exchange_token = item["exchange_token"]
-        tradingsymbol = item["tradingsymbol"]
-        name = item["name"]
-        expiry = item["expiry"]
-        tick_size = item["tick_size"]
-        strike = item["strike"]
-        lot_size = item["lot_size"]
-        instrument_type = item["instrument_type"]
-        segment = item["segment"]
-        exchange = item["exchange"]
+            instrument_token = item["instrument_token"]
+            exchange_token = item["exchange_token"]
+            tradingsymbol = item["tradingsymbol"]
+            name = item["name"]
+            expiry = item["expiry"]
+            tick_size = item["tick_size"]
+            strike = item["strike"]
+            lot_size = item["lot_size"]
+            instrument_type = item["instrument_type"]
+            segment = item["segment"]
+            exchange = item["exchange"]
 
-        if instrument_exists(tradingsymbol):
-            print(item)
-            print("Updating instruments")
-            instrumentUpdate = Instruments.objects.get(
-                tradingsymbol=tradingsymbol)
-            instrumentUpdate.instrument_token = instrument_token
-            instrumentUpdate.exchange_token = exchange_token
-            instrumentUpdate.tradingsymbol = tradingsymbol
-            instrumentUpdate.name = name
-            instrumentUpdate.expiry = expiry
-            instrumentUpdate.tick_size = tick_size
-            instrumentUpdate.strike = strike
-            instrumentUpdate.lot_size = lot_size
-            instrumentUpdate.instrument_type = instrument_type
-            instrumentUpdate.segment = segment
-            instrumentUpdate.exchange = exchange
-            instrumentUpdate.save()
-        else:
-            print(item)
-            print("Adding instruments")
-            instrumentModel = Instruments(instrument_token=instrument_token, exchange_token=exchange_token, tradingsymbol=tradingsymbol, name=name,
-                                          expiry=expiry, tick_size=tick_size, strike=strike, lot_size=lot_size, instrument_type=instrument_type, segment=segment, exchange=exchange)
-            instrumentModel.save()
+            if instrument_exists(tradingsymbol):
+                print(item)
+                print("Updating instruments")
+                instrumentUpdate = Instruments.objects.get(
+                    tradingsymbol=tradingsymbol)
+                instrumentUpdate.instrument_token = instrument_token
+                instrumentUpdate.exchange_token = exchange_token
+                instrumentUpdate.tradingsymbol = tradingsymbol
+                instrumentUpdate.name = name
+                instrumentUpdate.expiry = expiry
+                instrumentUpdate.tick_size = tick_size
+                instrumentUpdate.strike = strike
+                instrumentUpdate.lot_size = lot_size
+                instrumentUpdate.instrument_type = instrument_type
+                instrumentUpdate.segment = segment
+                instrumentUpdate.exchange = exchange
+                instrumentUpdate.save()
+            else:
+                print(item)
+                print("Adding instruments")
+                instrumentModel = Instruments(instrument_token=instrument_token, exchange_token=exchange_token, tradingsymbol=tradingsymbol, name=name,
+                                            expiry=expiry, tick_size=tick_size, strike=strike, lot_size=lot_size, instrument_type=instrument_type, segment=segment, exchange=exchange)
+                instrumentModel.save()
+            if stop():
+                break
+    except Exception as e:
+        print("Error, ", e)
 
 def instrumentObjectToManualWatchlistObject(instrumentUpdate):
     for instrumentObject in instrumentUpdate:
@@ -501,7 +524,10 @@ def CheckTradingTime():
 
 
 def coreLogic():  # A methond to check
-    threading.Timer(0.3, coreLogic).start()
+    global timer
+    timer = threading.Timer(0.3, coreLogic)
+    timer.start()
+    
     checkTrade = CheckTradingTime()
 
     with coreLogicLock:

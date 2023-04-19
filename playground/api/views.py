@@ -49,11 +49,14 @@ def login_view(request):
             if TimeObj.dateCheck != todayDate:
                 TimeObjData.update(dateCheck=todayDate)
                 views.clearAllData()
+                print("inside the chekc")
                 views.fetchInstrumentInBackground()
+                
         algoWatchlistArray = models.AlgoWatchlist.objects.all()
         manualWatchlistArray = models.ManualWatchlist.objects.all()
         views.updateSavedSubscriberList(algoWatchlistArray.values())
         views.updateSavedSubscriberList(manualWatchlistArray.values())
+        
         response['error'] = 0
         response['status'] = "success"
         response["data"] = "User Authenticated."
@@ -65,12 +68,26 @@ def login_view(request):
         return Response(response)
         
     
-@api_view(["POST"])   
+@api_view(["GET"])   
 def logoutUser(request):
     response = {'error':0,'status':'', "data":""}
+    print(kite.access_token )
     try:
-        logging.warning('Logout called = %s', kite.access_token)
+        # views.download_thread.stop()
+        print("before token")
+        print(kite.access_token)
+        
+        
+        views.stop_threads = True
+        # if download_thread:
+        #     download_thread.join()
+        views.timer.cancel()
+        
         kite.invalidate_access_token()
+        kite.set_access_token(None)
+        
+        print("after token")
+        print(kite.access_token)
         response['error'] = 0
         response['status'] = "success"
         response["data"] = "User UnAuthenticated, please log back in..."
@@ -78,21 +95,22 @@ def logoutUser(request):
     except Exception as e:
         response['error'] = 1
         response['status'] = "error"
-        response["data"] = "Something went wrong"
+        response["data"] = str(e)
         return Response(response)  
 
 
 @api_view(["GET"])
 def login_check_view(request):   
     response = {'error':0,'status':'', "data":""}
+    print(kite.access_token )
     if kite.access_token: 
         response['error'] = 0
         response['status'] = "success"
         response["data"] = "User Authenticated"
         return Response(response)    
     else:
-        response['error'] = 1
-        response['status'] = "error"
+        response['error'] = 0
+        response['status'] = "success"
         response["data"] = "User not Authenticated."
         return Response(response)
 
