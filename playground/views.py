@@ -1,24 +1,18 @@
 from django.views.decorators.csrf import csrf_exempt
-# from dis import Instruction
-# import imp
-# import array
 import pytz
-# import logging
-# from multiprocessing import context
-# from pickle import FALSE, TRUE
-# from threading import Thread
+
+
+
 import threading
-# from urllib import response
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
 from playground import constants
 from playground.models import DateTimeCheck, Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
 from django.contrib import messages
-from kiteconnect import KiteConnect, KiteTicker
-# from django.contrib.auth import logout, login, authenticate
+from kiteconnect import KiteConnect
 from django.contrib.auth.models import User
-# from json import dumps
-# from django.db.models import Q
+from json import dumps
+from django.db.models import Q
 from django.db.models import Sum
 import datetime
 import time
@@ -28,7 +22,6 @@ from .consumers import liveData, startLiveConnection, updateSubscriberList, upda
 from .constants import KITE_API_KEY
 from django.http import JsonResponse
 from datetime import datetime, date, timedelta, time as dt_time
-from time import gmtime, strftime
 import logging
 import undetected_chromedriver as uc
 from selenium.webdriver.support.ui import WebDriverWait
@@ -58,7 +51,7 @@ coreRunning = False
 # =========================
 
 
-def index(request: HttpRequest):    
+def index(request: HttpRequest):
     return render(request, 'index.html', context={'api_key': KITE_API_KEY})
 
 
@@ -227,10 +220,6 @@ def settings(request):
         return render(request, 'settings.html', {'settings': settingsValues})
 
 def logoutUser(request):
-    logging.warning('Logout called = %s', kite.access_token)
-    print("before token")
-    print(kite.access_token)
-    
     global stop_threads, download_thread, timer
     stop_threads = True
     # if download_thread:
@@ -239,10 +228,8 @@ def logoutUser(request):
     
     kite.invalidate_access_token()
     kite.set_access_token(None)
-    
-    print("after token")
-    print(kite.access_token)
-    # kite.invalidate_access_token()
+    logging.warning('Logout called = %s', kite.access_token)
+    kite.invalidate_access_token()
     return redirect("/")
 
 # =========================
@@ -265,57 +252,50 @@ def on_done():
 
 def fetchInstrumentInBackground():
     # do some stuff
-    global stop_threads, download_thread
-    stop_threads = False
     download_thread = threading.Thread(
-        target=refreshIntrumentList, name="Downloader", args =(lambda : stop_threads, ))
+        target=refreshIntrumentList, name="Downloader")
     download_thread.start()
 
 
-def refreshIntrumentList(stop):
-    try:
-        instrumentList = kite.instruments(exchange='NSE')
-        for item in instrumentList:
+def refreshIntrumentList():
+    instrumentList = kite.instruments(exchange='NSE')
+    for item in instrumentList:
 
-            instrument_token = item["instrument_token"]
-            exchange_token = item["exchange_token"]
-            tradingsymbol = item["tradingsymbol"]
-            name = item["name"]
-            expiry = item["expiry"]
-            tick_size = item["tick_size"]
-            strike = item["strike"]
-            lot_size = item["lot_size"]
-            instrument_type = item["instrument_type"]
-            segment = item["segment"]
-            exchange = item["exchange"]
+        instrument_token = item["instrument_token"]
+        exchange_token = item["exchange_token"]
+        tradingsymbol = item["tradingsymbol"]
+        name = item["name"]
+        expiry = item["expiry"]
+        tick_size = item["tick_size"]
+        strike = item["strike"]
+        lot_size = item["lot_size"]
+        instrument_type = item["instrument_type"]
+        segment = item["segment"]
+        exchange = item["exchange"]
 
-            if instrument_exists(tradingsymbol):
-                print(item)
-                print("Updating instruments")
-                instrumentUpdate = Instruments.objects.get(
-                    tradingsymbol=tradingsymbol)
-                instrumentUpdate.instrument_token = instrument_token
-                instrumentUpdate.exchange_token = exchange_token
-                instrumentUpdate.tradingsymbol = tradingsymbol
-                instrumentUpdate.name = name
-                instrumentUpdate.expiry = expiry
-                instrumentUpdate.tick_size = tick_size
-                instrumentUpdate.strike = strike
-                instrumentUpdate.lot_size = lot_size
-                instrumentUpdate.instrument_type = instrument_type
-                instrumentUpdate.segment = segment
-                instrumentUpdate.exchange = exchange
-                instrumentUpdate.save()
-            else:
-                print(item)
-                print("Adding instruments")
-                instrumentModel = Instruments(instrument_token=instrument_token, exchange_token=exchange_token, tradingsymbol=tradingsymbol, name=name,
-                                            expiry=expiry, tick_size=tick_size, strike=strike, lot_size=lot_size, instrument_type=instrument_type, segment=segment, exchange=exchange)
-                instrumentModel.save()
-            if stop():
-                break
-    except Exception as e:
-        print("Error, ", e)
+        if instrument_exists(tradingsymbol):
+            print(item)
+            print("Updating instruments")
+            instrumentUpdate = Instruments.objects.get(
+                tradingsymbol=tradingsymbol)
+            instrumentUpdate.instrument_token = instrument_token
+            instrumentUpdate.exchange_token = exchange_token
+            instrumentUpdate.tradingsymbol = tradingsymbol
+            instrumentUpdate.name = name
+            instrumentUpdate.expiry = expiry
+            instrumentUpdate.tick_size = tick_size
+            instrumentUpdate.strike = strike
+            instrumentUpdate.lot_size = lot_size
+            instrumentUpdate.instrument_type = instrument_type
+            instrumentUpdate.segment = segment
+            instrumentUpdate.exchange = exchange
+            instrumentUpdate.save()
+        else:
+            print(item)
+            print("Adding instruments")
+            instrumentModel = Instruments(instrument_token=instrument_token, exchange_token=exchange_token, tradingsymbol=tradingsymbol, name=name,
+                                          expiry=expiry, tick_size=tick_size, strike=strike, lot_size=lot_size, instrument_type=instrument_type, segment=segment, exchange=exchange)
+            instrumentModel.save()
 
 def instrumentObjectToManualWatchlistObject(instrumentUpdate):
     for instrumentObject in instrumentUpdate:
@@ -1112,7 +1092,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
     #winsound.PlaySound('./playy.mp3', winsound.SND_FILENAME|winsound.SND_NOWAIT)
    
    
-      
+    winsound.PlaySound("SystemQuestion", winsound.SND_NOWAIT)  
     #winsound.Beep(440, 500)
 
 def getPositionAndUpdateModels(ltp, scriptCode, orderId, type):

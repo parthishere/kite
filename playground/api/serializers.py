@@ -11,6 +11,11 @@ class AlgoWatchlistSerializer(serializers.ModelSerializer):
         model=AlgoWatchlist
         fields = "__all__"
         
+class ManualWatchlistSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ManualWatchlist
+        fields = "__all__"
+        
 class InstrumentsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Instruments

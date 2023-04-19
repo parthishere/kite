@@ -110,7 +110,7 @@ def login_check_view(request):
         return Response(response)    
     else:
         response['error'] = 0
-        response['status'] = "success"
+        response['status'] = "fail"
         response["data"] = "User not Authenticated."
         return Response(response)
 
@@ -155,11 +155,13 @@ def manualwatch(request):
         response["data"] = "User not Authenticated..Please log in"
         return Response(response)
     positionArray = views.getPositions()
+    positionData = serializers.PositionsSerializer(positionArray, many=True).data
     totalPNL = views.total_pnl()
     manualWatchlistArray = models.ManualWatchlist.objects.all()
+    manual_data = serializers.ManualWatchlistSerializer(manualWatchlistArray, many=True).data
     # allInstruments = list(models.Instruments.objects.all(
     # ).values_list('tradingsymbol', flat=True))
-    return Response({"error":0, "status": "success", "data":{'manualWatchlistArray': manualWatchlistArray, 'positionArray': positionArray, 'totalPNL': totalPNL}})
+    return Response({"error":0, "status": "success", "data":{'manualWatchlistArray': manual_data, 'positionArray': positionData, 'totalPNL': totalPNL}})
 
 @api_view(['GET'])
 def OrdersApi(reqeust):
@@ -185,7 +187,7 @@ def OrdersApi(reqeust):
 
 
 
-
+@api_view(["GET","POST"])
 def SettingsView(request):
     """ Send Intrument time (%H:%M:%S format), stoploss, target, scaleupqty, scaledownqty, openingrange and openingrangebox in the request.body as a json response 
     @param: "time"
@@ -262,12 +264,13 @@ def SettingsView(request):
             return Response(response)
         else:
             settingsValues = models.Preferences.objects.all()
-            json_data = serializers.PreferencesSerializer(settingsValues).data
+            json_data = serializers.PreferencesSerializer(settingsValues, many=True).data
             response['error'] = 0
             response['status'] = "success"
             response["data"] = {"settings":json_data}
             return Response(response)
         
+            
     except Exception as e:
         response['error'] = 1
         response['status'] = "error"
@@ -463,7 +466,8 @@ class StopAlgoAndManualSingleAPI(APIView):
 
 
 class StartAllAPI(APIView):
-    """ Send nothing in the request.body as a json response 
+    """ 
+    @instrumentQuantity in request.body
     """
     def post(self,request):
         response = {'error':0,'status':'', "data":""}
@@ -742,10 +746,26 @@ class ScaleDownQtyAPI(APIView):
             return Response(response)
 
 
-## Ahithi baki 6e API banavva ni
-class LiveSearchAndAddInstrumentAPI(APIView):
+## Ahithi baki 6e API banavva ni\
+@api_view(["GET"])    
+def searchAPI(request):
     """
-    It will send all the instruments trading symbol starting from instrument data
+    It will send all the instruments trading symbol starting from instrument data 
+    @param: "q"
+    @request: GET
+    example:
+    /search/?q="T" // will return all the instruments starting from T
+    """
+    
+    q = request.query_params.get("q")
+    instrumentObject = models.Instruments.objects.filter(
+                tradingsymbol__startswith=q).values_list("id", "tradingsymbol")
+  
+    return Response({"error":0, "status":"sucess", "data":list(instrumentObject)})
+
+
+class AddInstrumentAPI(APIView):
+    """
     
     Send Intrument name (TCS) ,quantity and is_algo in the request.body as a json response 
     @param: "instument"
@@ -773,11 +793,7 @@ class LiveSearchAndAddInstrumentAPI(APIView):
     "instrument":"TCS", // Trading Symbol
     "is_algo": true // means manual instrument will be automaticaly set to false
 
-    
-    example:
-    
-    "instrument":"T", // Trading Symbol starting with T
-    "is_algo": true // means manual instrument will be automaticaly set to false
+   
     
     """
     def post(self,request):
@@ -792,21 +808,24 @@ class LiveSearchAndAddInstrumentAPI(APIView):
             instrument_name = params['instrument']
             is_algo = params['is_algo']
             if instrument_name and is_algo:
-                instrumentObject = models.Instruments.objects.filter(tradingsymbol=instrument_name).values()
+                instrumentObject = models.Instruments.objects.filter(
+                    tradingsymbol=instrument_name).values()
+                print(instrumentObject)
                 instumentData = instrumentObject[0]
                 print(instumentData["instrument_token"])
                 print(instumentData["tradingsymbol"])
-                updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
+                consumers.updateSubscriberList(
+                    instumentData["instrument_token"], instumentData["tradingsymbol"], True)
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    instrumentObjectToAlgoWatchlistObject(instrumentObject)
-                    algoWatchObject = models.AlgoWatchlist.objects.filter(instruments=instrument_name).values()
-                    response = {'error':0,'status':'success','data':{"instruments": list(algoWatchObject)}}
-                    return Response(response)                          
-                else:
                     instrumentObjectToManualWatchlistObject(instrumentObject)
-                    manualWatchObject = models.ManualWatchlist.objects.filter(instruments=instrument_name).values()
-                    response = {'error':0,'status':'success','data':{"instruments": list(manualWatchObject)}}
-                    return Response(response)   
+                    manualWatchObject = models.ManualWatchlist.objects.filter(
+                        instruments=instrument_name).values()
+                    return Response({"error":0, "status":"success","data":{"instrument": list(manualWatchObject)}})
+                else:
+                    instrumentObjectToAlgoWatchlistObject(instrumentObject)
+                    algoWatchObject = models.AlgoWatchlist.objects.filter(
+                        instruments=instrument_name).values()
+                    return Response({"error":0, "status":"success","data":{"instrument": list(algoWatchObject)}})
             else:
                 response['error'] = 1
                 response['status'] = "error"
