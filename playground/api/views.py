@@ -31,8 +31,14 @@ coreRunning = False
 
 @api_view(["GET"])
 def login_view(request):  
+    """ 
+    Send request_token in the request.GET as a GET parameter so basically :
+    url/api/login?request_token=ARE123FDSA
+    
+    @param: request_token
+    """
     response = {'error':0,'status':'', "data":""}  
-    if request.GET.get('request_token'):
+    if request.query_params.get('request_token'):
         
         data = kite.generate_session(
             request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
@@ -127,6 +133,11 @@ def login_with_zerodha(request):
     response["data"] = "Not valid parameters"
     return Response(response)
 
+@api_view(["GET"])
+def allInstuments(request):
+
+    allInstruments = list(models.Instruments.objects.all().values_list('tradingsymbol', flat=True))
+    return Response({"error":0, "status": "success", "data":{"allInstruments":allInstruments}})
 
 
 @api_view(["GET"])
@@ -467,7 +478,7 @@ class StopAlgoAndManualSingleAPI(APIView):
 
 class StartAllAPI(APIView):
     """ 
-    @instrumentQuantity in request.body
+    @instrumentQuantity in request.body as a json response 
     """
     def post(self,request):
         response = {'error':0,'status':'', "data":""}

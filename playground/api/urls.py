@@ -5,6 +5,7 @@ urlpatterns = [
     path("login/", views.login_view, name="api-login-view"),    
     path("login-check/", views.login_check_view, name="api-login-view"), 
     path("autologin/", views.login_with_zerodha,name="API-Autologin"),
+    path("all-instruments/", views.allInstuments, name="all-ins"),
     path("algowatch/", views.algowatch,name="API-Algowatch"),
     path("manualwatch/",  views.manualwatch, name="API-Manualwatch"),
     path("orders/",  views.OrdersApi, name="API-Orders"),
