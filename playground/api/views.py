@@ -890,9 +890,9 @@ class DeleteInstrumentAPI(APIView):
             is_algo = params['is_algo']
             if instrument_name and is_algo:
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    models.ManualWatchlist.objects.filter(instruments=instrument_name).delete()
-                else:
                     models.AlgoWatchlist.objects.filter(instruments=instrument_name).delete()
+                else:
+                    models.ManualWatchlist.objects.filter(instruments=instrument_name).delete()
 
                 instrumentObject = models.Instruments.objects.filter(
                     tradingsymbol=instrument_name).values()
