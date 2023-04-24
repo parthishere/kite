@@ -136,6 +136,7 @@ def login_with_zerodha(request):
 @api_view(["GET"])
 def allInstuments(request):
     """
+    
     repsonse : {
     "error": 0,
     "status": "success",
