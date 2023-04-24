@@ -27,8 +27,6 @@ kite = views.kite
 coreLogicLock = threading.Lock()
 coreRunning = False
 
-
-
 @api_view(["GET"])
 def login_view(request):  
     """ 
