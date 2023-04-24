@@ -135,8 +135,25 @@ def login_with_zerodha(request):
 
 @api_view(["GET"])
 def allInstuments(request):
-
-    allInstruments = list(models.Instruments.objects.all().values_list('tradingsymbol', flat=True))
+    """
+    repsonse : {
+    "error": 0,
+    "status": "success",
+    "data": {
+        "allInstruments": [
+            {
+                "name": "NIFTY22DEC14000CE"
+            },
+            {
+                "name": "NIFTY22DEC10900PE"
+            },
+        ]
+    }
+    }
+    """
+    allInstruments = []
+    for x in  models.Instruments.objects.all().values_list('tradingsymbol', flat=True):
+        allInstruments.append({"name": x})
     return Response({"error":0, "status": "success", "data":{"allInstruments":allInstruments}})
 
 
