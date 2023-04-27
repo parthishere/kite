@@ -1124,110 +1124,133 @@ def stopSinglehalf_halfAlgo_manualAPI(request):  # For Manual and Algo watchlist
         response["data"] = str(e)
         return Response(response)
 
-# @api_view(["GET"])
-# def getPositions():
-#     """
-#         get live positions
-#     """
-#     positionsdict = kite.positions()
-#     consumers.updatePostions(positionsdict)
-#     positions = positionsdict['net']
-#     entryPrice = 0.0
+@api_view(["GET"])
+def getPositions():
+    """
+        get live positions
+    """
+    positionsdict = kite.positions()
+    #print(positionsdict)
 
-#     # print(positions)
-#     if len(positions) > 0:
-#         # if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
-#         for position in positions:
-#             # print("Checking postion for " + position['tradingsymbol'])
-#             if (l_data := consumers.liveData.get(position['tradingsymbol'])):
-#                 pnl = (position['sell_value'] - position['buy_value']) + \
-#                     (position['quantity'] * l_data['LTP']
-#                      * position['multiplier'])
-#             else:
-#                 pnl = position['pnl']
+    for pos in range(len(positionsdict['net'])):
+        if (l_data := liveData.get(positionsdict['net'][pos]['tradingsymbol'])):
+            pnl = (positionsdict['net'][pos]['sell_value']-positionsdict['net'][pos]['buy_value']) + (positionsdict['net'][pos]['multiplier']*l_data['LTP']*positionsdict['net'][pos]['quantity'])
+            positionsdict['net'][pos]['pnl']=round(float(pnl),2)
+            #positionsdict['net'][pos]['pnl']="+{}".format(round(float(pnl),2)) if float(pnl) > 0 else round(float(pnl),2) 
 
-#             # For Open Buy position
-#             if int(position['quantity']) > 0:
-#                 # print("Checking for buy postion " + position['tradingsymbol'])
+            if positionsdict['net'][pos]['quantity'] != 0 :             # used for % profit 
+                    positionsdict['net'][pos]['last_price']  = ( positionsdict['net'][pos]['pnl'] / (positionsdict['net'][pos]['average_price']*0.20*positionsdict['net'][pos]['quantity']) )*100 
+            else :
+                if positionsdict['net'][pos]['buy_quantity'] != 0 :
+                    positionsdict['net'][pos]['last_price']  = ((( positionsdict['net'][pos]['day_sell_price'] - positionsdict['net'][pos]['day_buy_price'])/positionsdict['net'][pos]['day_buy_quantity'] )*100*5)/ ( positionsdict['net'][pos]['day_buy_price']/positionsdict['net'][pos]['day_buy_quantity'] )
 
-#                 if models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
-#                     models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-#                         openPostion=True, startAlgo=True, positionType="BUY", isBuyClicked=False, isSellClicked=False)  # qty=position['quantity']
-#                     entryPrice = float(models.ManualWatchlist.objects.filter(
-#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
-#                 elif models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']):
-#                     models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-#                         openPostion=True, startAlgo=True)
-#                     entryPrice = float(models.AlgoWatchlist.objects.filter(
-#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
+            if positionsdict['net'][pos]['quantity']==0 :
+                positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']
+            else:
+                positionsdict['net'][pos]['average_price']=  positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['quantity']
 
-#                 if not position_exists(position['tradingsymbol']):
-#                     # Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
-#                     positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], avgTradedPrice=round(
-#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
-#                     positionObject.save()
-#                     views.getPositionAndUpdateModels(
-#                         ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="BUY")
-#                 else:
-#                     # print("Updating New Buy Positions")
-#                     views.getPositionAndUpdateModels(
-#                         ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="BUY")
-#                     models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(
-#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+            if positionsdict['net'][pos]['quantity']< 0 :
+                if positionsdict['net'][pos]['pnl'] < 0 :
+                    positionsdict['net'][pos]['average_price'] = 0 - positionsdict['net'][pos]['average_price'] 
+          
 
-#             # For Open sell position
-#             if int(position['quantity']) < 0:
-#                 # print("Checking for Sell postion " + position['tradingsymbol'])
-#                 setQty = abs(position['quantity'])
+                
+    #print(positionsdict)
+    consumers.updatePostions(positionsdict)
+    positions = positionsdict['net']
+    entryPrice = 0.0
 
-#                 if models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
-#                     models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-#                         openPostion=True, startAlgo=True, positionType="SELL", isBuyClicked=False, isSellClicked=False)  # , qty=setQty
-#                     entryPrice = float(models.ManualWatchlist.objects.filter(
-#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
-#                 elif models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']):
-#                     models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-#                         openPostion=True, startAlgo=True)
-#                     entryPrice = float(models.AlgoWatchlist.objects.filter(
-#                         instruments=position['tradingsymbol']).values()[0]["entryprice"])
+    # print(positions)  #"+{}".format(round(float(pnl),2)) if float(pnl) > 0 else round(float(pnl),2)
+    if len(positions) > 0:
+        # if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
+        for position in positions:
 
-#                 if not position_exists(position['tradingsymbol']):
-#                     # Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
-#                     positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], avgTradedPrice=round(
-#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
-#                     positionObject.save()
-#                     views.getPositionAndUpdateModels(
-#                         ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="SELL")
-#                 else:
-#                     # print("Updating New Sell Positions")
-#                    views.getPositionAndUpdateModels(
-#                          ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="SELL")
-#                     models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(
-#                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+            pnl = position['pnl']
 
-#             # For Closed Positions
-#             if int(position['quantity']) == 0:
-#                 models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-#                     openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
-#                 models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-#                     openPostion=False, startAlgo=False)
-#                 # print("Checking for closed postion " + position['tradingsymbol'])
-#                 if not position_exists(position['tradingsymbol']):
-#                     positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], entryprice=0.0, avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
-#                         position['last_price'], 2), pnl=round(pnl, 3), unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
-#                     positionObject.save()
-#                 else:
-#                     # print("Updating New Positions")
-#                     models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
-#                         position['last_price'], 2), pnl=round(pnl, 3), unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
-#     # else:
-#     #     print("No postion available")
+            # For Open Buy position
+            if int(position['quantity']) > 0:
+                # print("Checking for buy postion " + position['tradingsymbol'])
 
-#     positions_query =  models.Positions.objects.all()
-#     data = serializers.PositionsSerializer(positions_query, many=True).data
-#     return Response(data)
+                if models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
+                    models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+                        openPostion=True, startAlgo=True, positionType="BUY", isBuyClicked=False, isSellClicked=False)  # qty=position['quantity']
+                    entryPrice = float(models.ManualWatchlist.objects.filter(
+                        instruments=position['tradingsymbol']).values()[0]["entryprice"])
+                elif models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']):
+                    models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+                        openPostion=True, startAlgo=True)
+                    entryPrice = float(models.AlgoWatchlist.objects.filter(
+                        instruments=position['tradingsymbol']).values()[0]["entryprice"])
+
+                if not position_exists(position['tradingsymbol']):
+                    # Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
+                    positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], avgTradedPrice=round(
+                        position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+                    positionObject.save()
+                    views.getPositionAndUpdateModels(
+                        ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="BUY")
+                else:
+                    # print("Updating New Buy Positions")
+                    views.getPositionAndUpdateModels(
+                        ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="BUY")
+                    models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(
+                        position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+
+            # For Open sell position
+            if int(position['quantity']) < 0:
+                # print("Checking for Sell postion " + position['tradingsymbol'])
+                setQty = abs(position['quantity'])
+
+                if models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']):
+                    models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+                        openPostion=True, startAlgo=True, positionType="SELL", isBuyClicked=False, isSellClicked=False)  # , qty=setQty
+                    entryPrice = float(models.ManualWatchlist.objects.filter(
+                        instruments=position['tradingsymbol']).values()[0]["entryprice"])
+                elif models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']):
+                    models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+                        openPostion=True, startAlgo=True)
+                    entryPrice = float(models.AlgoWatchlist.objects.filter(
+                        instruments=position['tradingsymbol']).values()[0]["entryprice"])
+
+                if not position_exists(position['tradingsymbol']):
+                    # Calcualte SL and TG price for open postion and set regarding parameter for front update in Postion table
+                    positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], avgTradedPrice=round(
+                        position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
+                    positionObject.save()
+                    views.getPositionAndUpdateModels(
+                        ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="SELL")
+                else:
+                    # print("Updating New Sell Positions")
+                    views.getPositionAndUpdateModels(
+                        ltp=entryPrice, scriptCode=position['tradingsymbol'], orderId="", type="SELL")
+                    models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(
+                        position['average_price'], 2), pnl=round(float(pnl), 3), startAlgo=True)
+
+            # For Closed Positions
+            if int(position['quantity']) == 0:
+                models.ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+                    openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
+                models.AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
+                    openPostion=False, startAlgo=False)
+                # print("Checking for closed postion " + position['tradingsymbol'])
+                if not position_exists(position['tradingsymbol']):
+                    print(pnl,'not posi')
+                    positionObject = models.Positions(instruments=position['tradingsymbol'], qty=position['quantity'], entryprice=0.0, avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
+                        position['last_price'], 2), pnl=pnl, unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
+                    positionObject.save()
+                else:
+                    print("Updating New Positions",pnl)
+                    models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
+                        position['last_price'], 2), pnl=pnl, unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
+    # else:
+    #     print("No postion available")
 
 
-## Error
+    positions_query =  models.Positions.objects.all()
+    data = serializers.PositionsSerializer(positions_query, many=True).data
+    return Response(data)
+
+
+# Error
 
 

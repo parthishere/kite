@@ -10,7 +10,8 @@ urlpatterns = [
     path("manualwatch/",  views.manualwatch, name="API-Manualwatch"),
     path("orders/",  views.OrdersApi, name="API-Orders"),
     path('positions/', views.PositionsModelApi,name="positionsapi"),
-    # path('live-positions/', views.getPositions,name="positionsapi-live"),
+    path('live-positions/', views.getPositions,name="positionsapi-live"),
+    
     path("settings/",  views.SettingsView, name="API-Settings"), 
     path('startAlgo/', views.StartAlgoSingleAPI.as_view(), name='StartAlgoSingleAPI'),
     path('stopAlgo/', views.StopAlgoAndManualSingleAPI.as_view(), name='StopAlgoSingleAPI'),

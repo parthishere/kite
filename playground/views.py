@@ -1092,7 +1092,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
     #winsound.PlaySound('./playy.mp3', winsound.SND_FILENAME|winsound.SND_NOWAIT)
    
    
-    winsound.PlaySound("SystemQuestion", winsound.SND_NOWAIT)  
+     
     #winsound.Beep(440, 500)
 
 def getPositionAndUpdateModels(ltp, scriptCode, orderId, type):
