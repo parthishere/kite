@@ -29,29 +29,29 @@ class SearchInstrumentsSerializer(serializers.ModelSerializer):
 
 # For orderlist API
 class OrderSerializer(serializers.ModelSerializer):
-    time = serializers.CharField(source = 'orderTimestamp')
-    type = serializers.CharField(source = 'transactionType')
-    price = serializers.FloatField(source ='avgTradedPrice')
+    # time = serializers.CharField(source = 'orderTimestamp')
+    # type = serializers.CharField(source = 'transactionType')
+    # price = serializers.FloatField(source ='avgTradedPrice')
     class Meta:
         model = Orders
-        fields = ('id','time','orderType','type','instruments','qty','status','price')
+        fields = "__all__"
 
 class PositionsSerializer(serializers.ModelSerializer):
-    type=serializers.CharField(source ='positionType')
-    entry=serializers.CharField(source ='entryprice')
-    ltp=serializers.CharField(source ='lastTradedPrice')
-    average=serializers.CharField(source ='avgTradedPrice')
-    exit=serializers.CharField(source ='avgTradedPrice')
-    actions=serializers.CharField(source ='startAlgo')
-    per = serializers.SerializerMethodField()
+    # type=serializers.CharField(source ='positionType')
+    # entry=serializers.CharField(source ='entryprice')
+    # ltp=serializers.CharField(source ='lastTradedPrice')
+    # average=serializers.CharField(source ='avgTradedPrice')
+    # exit=serializers.CharField(source ='avgTradedPrice')
+    # actions=serializers.CharField(source ='startAlgo')
+    # per = serializers.SerializerMethodField()
 
-    def get_per(self,obj):
-        ltp = float(obj.lastTradedPrice)
-        entry = float(obj.entryprice)
-        try:
-            return "{:.2f} %".format((ltp - entry) / entry * 100)
-        except Exception as e:
-            return str(e)
+    # def get_per(self,obj):
+    #     ltp = float(obj.lastTradedPrice)
+    #     entry = float(obj.entryprice)
+    #     try:
+    #         return "{:.2f} %".format((ltp - entry) / entry * 100)
+    #     except Exception as e:
+    #         return str(e)
     class Meta:
         model = Positions
-        fields = ("id","instruments","type","qty","entry","ltp","average","exit","actions","pnl","per")
+        fields = "__all__"

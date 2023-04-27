@@ -36,36 +36,42 @@ def login_view(request):
     @param: request_token
     """
     response = {'error':0,'status':'', "data":""}  
-    if request.query_params.get('request_token'):
-        
-        data = kite.generate_session(
-            request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
-        kite.set_access_token(data["access_token"])
-        logging.warning("Access token===== %s", data["access_token"])
-        
-        consumers.startLiveConnection(str(kite.access_token))
-        coreLogic()
-        
-        TimeObjData = models.DateTimeCheck.objects.all()
-        if TimeObjData.exists():
-            TimeObj = TimeObjData.first()
-            todayDate = (datetime.now() + timedelta(hours=5, minutes=30)).date()
-            if TimeObj.dateCheck != todayDate:
-                TimeObjData.update(dateCheck=todayDate)
-                views.clearAllData()
-                print("inside the chekc")
-                views.fetchInstrumentInBackground()
-                
-        algoWatchlistArray = models.AlgoWatchlist.objects.all()
-        manualWatchlistArray = models.ManualWatchlist.objects.all()
-        views.updateSavedSubscriberList(algoWatchlistArray.values())
-        views.updateSavedSubscriberList(manualWatchlistArray.values())
-        
-        response['error'] = 0
-        response['status'] = "success"
-        response["data"] = "User Authenticated."
-        return Response(response)    
-    else:
+    try:
+        if request.GET.get('request_token'):
+            
+            data = kite.generate_session(
+                request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
+            kite.set_access_token(data["access_token"])
+            logging.warning("Access token===== %s", data["access_token"])
+            
+            consumers.startLiveConnection(str(kite.access_token))
+            coreLogic()
+            
+            TimeObjData = models.DateTimeCheck.objects.all()
+            if TimeObjData.exists():
+                TimeObj = TimeObjData.first()
+                todayDate = (datetime.now() + timedelta(hours=5, minutes=30)).date()
+                if TimeObj.dateCheck != todayDate:
+                    TimeObjData.update(dateCheck=todayDate)
+                    views.clearAllData()
+                    print("inside the chekc")
+                    views.fetchInstrumentInBackground()
+                    
+            algoWatchlistArray = models.AlgoWatchlist.objects.all()
+            manualWatchlistArray = models.ManualWatchlist.objects.all()
+            views.updateSavedSubscriberList(algoWatchlistArray.values())
+            views.updateSavedSubscriberList(manualWatchlistArray.values())
+            
+            response['error'] = 0
+            response['status'] = "success"
+            response["data"] = "User Authenticated."
+            return Response(response)    
+        else:
+            response['error'] = 1
+            response['status'] = "error"
+            response["data"] = "User not Authenticated..Try again"
+            return Response(response)
+    except:
         response['error'] = 1
         response['status'] = "error"
         response["data"] = "User not Authenticated..Try again"
@@ -751,21 +757,17 @@ class ScaleDownQtyAPI(APIView):
             instrument_name = params['instrument']
             instrument_quantity = params['instrumentQuantity']
             is_algo = params["is_algo"]
-            if instrument_name and instrument_quantity:
-                print("Updated QTY ===========+++++++", instrument_name, instrument_quantity)
-                if is_algo == True or is_algo == "true" or is_algo == 1:
-                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-                else:
-                    models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-                response['error'] = 0      
-                response['status'] = 'success'
-                response["data"] = "scaled down quantity for algowatch/manualwatch list"
-                return Response(response)
+            
+            print("Updated QTY ===========+++++++", instrument_name, instrument_quantity)
+            if is_algo == True or is_algo == "true" or is_algo == 1:
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
             else:
-                response['error'] = 1
-                response['status'] = "error"
-                response["data"] = "Not valid parameters"
-                return Response(response)
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+            response['error'] = 0      
+            response['status'] = 'success'
+            response["data"] = "scaled down quantity for algowatch/manualwatch list"
+            return Response(response)
+            
         except Exception as e:
             response['error'] = 1
             response['status'] = "error"
@@ -844,15 +846,17 @@ class AddInstrumentAPI(APIView):
                 consumers.updateSubscriberList(
                     instumentData["instrument_token"], instumentData["tradingsymbol"], True)
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    instrumentObjectToManualWatchlistObject(instrumentObject)
-                    manualWatchObject = models.ManualWatchlist.objects.filter(
-                        instruments=instrument_name).values()
-                    return Response({"error":0, "status":"success","data":{"instrument": list(manualWatchObject)}})
-                else:
                     instrumentObjectToAlgoWatchlistObject(instrumentObject)
                     algoWatchObject = models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).values()
                     return Response({"error":0, "status":"success","data":{"instrument": list(algoWatchObject)}})
+                    
+                else:
+                    instrumentObjectToManualWatchlistObject(instrumentObject)
+                    manualWatchObject = models.ManualWatchlist.objects.filter(
+                        instruments=instrument_name).values()
+                    return Response({"error":0, "status":"success","data":{"instrument": list(manualWatchObject)}})
+                    
             else:
                 response['error'] = 1
                 response['status'] = "error"
