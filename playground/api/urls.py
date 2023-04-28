@@ -24,7 +24,6 @@ urlpatterns = [
     path('addInstrument/', views.AddInstrumentAPI.as_view(), name='AddInstrumentAPI'),
     path('deleteInstrument/', views.DeleteInstrumentAPI.as_view(), name='DeleteInstrumentAPI'),  
     path("logout/", views.logoutUser, name="API-Logout"),  
-    
     path("halfAlgo/", views.stopSinglehalfAPI, name="stop-single-half"),
     path("halfAlgo_manual/getPositions", views.stopSinglehalf_halfAlgo_manualAPI),
     # search

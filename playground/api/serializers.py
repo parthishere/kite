@@ -37,12 +37,12 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class PositionsSerializer(serializers.ModelSerializer):
-    # type=serializers.CharField(source ='positionType')
-    # entry=serializers.CharField(source ='entryprice')
-    # ltp=serializers.CharField(source ='lastTradedPrice')
-    # average=serializers.CharField(source ='avgTradedPrice')
-    # exit=serializers.CharField(source ='avgTradedPrice')
-    # actions=serializers.CharField(source ='startAlgo')
+    type=serializers.CharField(source ='positionType')
+    entry=serializers.CharField(source ='entryprice')
+    ltp=serializers.CharField(source ='lastTradedPrice')
+    average=serializers.CharField(source ='avgTradedPrice')
+    exit=serializers.CharField(source ='avgTradedPrice')
+    actions=serializers.CharField(source ='startAlgo')
     # per = serializers.SerializerMethodField()
 
     # def get_per(self,obj):
@@ -54,4 +54,4 @@ class PositionsSerializer(serializers.ModelSerializer):
     #         return str(e)
     class Meta:
         model = Positions
-        fields = "__all__"
+        fields = ("id","instruments","type","qty","entry","ltp","average","exit","actions","pnl","per")

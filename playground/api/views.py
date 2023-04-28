@@ -939,7 +939,7 @@ def position_exists(tradingsymbol):
     return models.Positions.objects.filter(instruments=tradingsymbol).exists()
 
 
-
+@api_view(["POST"])
 def stopSinglehalfAPI(request):  # For Manual and Algo watchlist
     """ Send Intrument name (TCS) in the request.body as a json response 
     @param: "instument"
@@ -1031,7 +1031,7 @@ def stopSinglehalfAPI(request):  # For Manual and Algo watchlist
         response["data"] = str(e)
         return Response(response)
 
-
+@api_view(["POST"])
 def stopSinglehalf_halfAlgo_manualAPI(request):  # For Manual and Algo watchlist
     """ Send Intrument name (TCS) in the request.body as a json response 
     @param: "instument"
@@ -1133,7 +1133,7 @@ def getPositions():
     #print(positionsdict)
 
     for pos in range(len(positionsdict['net'])):
-        if (l_data := liveData.get(positionsdict['net'][pos]['tradingsymbol'])):
+        if (l_data := consumers.liveData.get(positionsdict['net'][pos]['tradingsymbol'])):
             pnl = (positionsdict['net'][pos]['sell_value']-positionsdict['net'][pos]['buy_value']) + (positionsdict['net'][pos]['multiplier']*l_data['LTP']*positionsdict['net'][pos]['quantity'])
             positionsdict['net'][pos]['pnl']=round(float(pnl),2)
             #positionsdict['net'][pos]['pnl']="+{}".format(round(float(pnl),2)) if float(pnl) > 0 else round(float(pnl),2) 
