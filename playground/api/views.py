@@ -21,6 +21,7 @@ from .permissions import CustomPermission
 from rest_framework.permissions import AllowAny
 import django_filters.rest_framework
 from rest_framework import filters
+from ..consumers import liveData
 
 kite = views.kite
 
@@ -395,7 +396,7 @@ class StartAlgoSingleAPI(APIView):
             params = json.loads(request.body)       
             instrument_name = params.get("instrument")   
             instrument_quantity = params.get("instrumentQuantity") 
-            if instrument_name and instrument_quantity: 
+            if instrument_name: 
                 print(instrument_name)  
                 # print("Came from JS to start" + params['instruments'])            
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0)
@@ -461,7 +462,7 @@ class StopAlgoAndManualSingleAPI(APIView):
             instrument_name = params['instrument']
             instrument_quantity = params['instrumentQuantity']
             is_algo = params["is_algo"] 
-            if instrument_name and instrument_quantity and is_algo:
+            if instrument_name :
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     print("Stop Single from Algowatchlist")
                     models.AlgoWatchlist.objects.filter(
@@ -572,7 +573,7 @@ class BuySingleManualAPI(APIView):
             params = json.loads(request.body)               
             instrument_name = params['instrument']
             instrument_quantity = params['instrumentQuantity']
-            if instrument_name and instrument_quantity:
+            if instrument_name:
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="BUY")
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
@@ -632,7 +633,7 @@ class SellSingleManualAPI(APIView):
             instrument_name = params['instrument']
             instrument_quantity = params['instrumentQuantity']
 
-            if instrument_name and instrument_quantity:
+            if instrument_name:
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="SELL")
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
@@ -695,7 +696,7 @@ class ScaleUpQtyAPI(APIView):
             instrument_quantity = params['instrumentQuantity']
             is_algo = params["is_algo"]
             
-            if instrument_name and instrument_quantity and is_algo:
+            if instrument_name:
                 print("Updated QTY ===========+++++++", instrument_name, instrument_quantity, is_algo)
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
@@ -836,7 +837,7 @@ class AddInstrumentAPI(APIView):
             params = json.loads(request.body)             
             instrument_name = params['instrument']
             is_algo = params['is_algo']
-            if instrument_name and is_algo:
+            if instrument_name:
                 instrumentObject = models.Instruments.objects.filter(
                     tradingsymbol=instrument_name).values()
                 print(instrumentObject)
@@ -908,7 +909,7 @@ class DeleteInstrumentAPI(APIView):
             params = json.loads(request.body)             
             instrument_name = params['instrument']
             is_algo = params['is_algo']
-            if instrument_name and is_algo:
+            if instrument_name:
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     models.AlgoWatchlist.objects.filter(instruments=instrument_name).delete()
                 else:
@@ -994,8 +995,8 @@ def stopSinglehalfAPI(request):  # For Manual and Algo watchlist
 
         acriptttt = params['instrument']
 
-        if acriptttt in consumers.liveData:
-            liveValues = consumers.liveData[acriptttt]
+        if acriptttt in liveData:
+            liveValues = liveData[acriptttt]
             # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
             partValue = (ordp*liveValues['Open'])/100
             ubl = liveValues['Open'] + partValue
@@ -1087,8 +1088,8 @@ def stopSinglehalf_halfAlgo_manualAPI(request):  # For Manual and Algo watchlist
 
         acriptttt = params['instrument']
 
-        if acriptttt in consumers.liveData:
-            liveValues = consumers.liveData[acriptttt]
+        if acriptttt in liveData:
+            liveValues = liveData[acriptttt]
             # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
             partValue = (ordp*liveValues['Open'])/100
             ubl = liveValues['Open'] + partValue

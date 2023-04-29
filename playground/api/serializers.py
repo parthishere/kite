@@ -54,4 +54,4 @@ class PositionsSerializer(serializers.ModelSerializer):
     #         return str(e)
     class Meta:
         model = Positions
-        fields = ("id","instruments","type","qty","entry","ltp","average","exit","actions","pnl","per")
+        fields = ("id","instruments","type","qty","entry","ltp","average","exit","actions","pnl")

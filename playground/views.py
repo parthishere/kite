@@ -879,6 +879,7 @@ def sellSingle(request):  # For Manual watchlist
 
 def startSingle(request):  # For Algo watchlist
     # print(liveData,"++++++++++++++++++++++++coming from consumers")
+    
     print("Came from JS to start" + request.POST['script'],)
     AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(entryprice=0.0 , slHitCount = 0)
     AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(startAlgo=True, algoStartTime=datetime.utcnow())
