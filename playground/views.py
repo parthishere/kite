@@ -1,15 +1,21 @@
 from django.views.decorators.csrf import csrf_exempt
+from dis import Instruction
+import imp
+import array
 import pytz
-
-
-
+# import logging
+from multiprocessing import context
+from pickle import FALSE, TRUE
+from threading import Thread
 import threading
+from urllib import response
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
 from playground import constants
 from playground.models import DateTimeCheck, Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
 from django.contrib import messages
-from kiteconnect import KiteConnect
+from kiteconnect import KiteConnect, KiteTicker
+from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User
 from json import dumps
 from django.db.models import Q
@@ -22,6 +28,7 @@ from .consumers import liveData, startLiveConnection, updateSubscriberList, upda
 from .constants import KITE_API_KEY
 from django.http import JsonResponse
 from datetime import datetime, date, timedelta, time as dt_time
+from time import gmtime, strftime
 import logging
 import undetected_chromedriver as uc
 from selenium.webdriver.support.ui import WebDriverWait
@@ -31,9 +38,7 @@ import pyotp
 
 
 kite = KiteConnect(api_key=constants.KITE_API_KEY)
-stop_threads = False
 timer = None
-download_thread = None
 manualWatchlistArray = []
 instrumentArray = []
 positionArray = []
@@ -220,7 +225,7 @@ def settings(request):
         return render(request, 'settings.html', {'settings': settingsValues})
 
 def logoutUser(request):
-    global stop_threads, download_thread, timer
+    global timer
     stop_threads = True
     # if download_thread:
     #     download_thread.join()
@@ -231,6 +236,7 @@ def logoutUser(request):
     logging.warning('Logout called = %s', kite.access_token)
     kite.invalidate_access_token()
     return redirect("/")
+
 
 # =========================
 # All Supported Functions
@@ -352,7 +358,7 @@ def getPositions():
                     positionsdict['net'][pos]['last_price']  = ((( positionsdict['net'][pos]['day_sell_price'] - positionsdict['net'][pos]['day_buy_price'])/positionsdict['net'][pos]['day_buy_quantity'] )*100*5)/ ( positionsdict['net'][pos]['day_buy_price']/positionsdict['net'][pos]['day_buy_quantity'] )
 
             if positionsdict['net'][pos]['quantity']==0 :
-                positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']
+                positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['day_buy_quantity']
             else:
                 positionsdict['net'][pos]['average_price']=  positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['quantity']
 
@@ -879,7 +885,6 @@ def sellSingle(request):  # For Manual watchlist
 
 def startSingle(request):  # For Algo watchlist
     # print(liveData,"++++++++++++++++++++++++coming from consumers")
-    
     print("Came from JS to start" + request.POST['script'],)
     AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(entryprice=0.0 , slHitCount = 0)
     AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(startAlgo=True, algoStartTime=datetime.utcnow())
@@ -1090,10 +1095,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
             if position_exists(scriptCode):
                 Positions.objects.filter(instruments=scriptCode).update(qty=0)
         getPositions()
-    #winsound.PlaySound('./playy.mp3', winsound.SND_FILENAME|winsound.SND_NOWAIT)
-   
-   
-     
+  
     #winsound.Beep(440, 500)
 
 def getPositionAndUpdateModels(ltp, scriptCode, orderId, type):
