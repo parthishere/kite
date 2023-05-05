@@ -226,10 +226,12 @@ def settings(request):
 
 def logoutUser(request):
     global timer
-    stop_threads = True
     # if download_thread:
     #     download_thread.join()
-    timer.cancel()
+    try:
+        timer.cancel()
+    except:
+        pass
     
     kite.invalidate_access_token()
     kite.set_access_token(None)

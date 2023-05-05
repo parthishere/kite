@@ -24,6 +24,7 @@ defaultsubscriberlist = {256265: 'NIFTY 50', 260105: 'NIFTY BANK'}
 liveData = {}
 newPositionsdict = {}
 updatedPNL = {}
+
 # instrumentUpdate = Instruments.objects.filter(Q(tradingsymbol='ITC', exchange = 'NSE') | Q(tradingsymbol='HDFC', exchange = 'NSE') |  Q(tradingsymbol='RELIANCE', exchange = 'NSE') | Q(tradingsymbol='BPCL', exchange = 'NSE') | Q(tradingsymbol='ABB', exchange = 'NSE') | Q(tradingsymbol='IEX', exchange = 'NSE')).values()
 # for instrumentObject in instrumentUpdate:
 #     tokens = instrumentObject.get('instrument_token')
@@ -150,20 +151,23 @@ class MyAsyncConsumer(AsyncConsumer):
         })
         # print(liveData, "______________________++++++++++live data 1")
         # counter = 0
-        while True:
-            valDict = {}
-            # print(updatedPNL['pnl'],"______________________++++++++++pnl data 2")
-            await asyncio.sleep(1)
-            valDict["liveData"] = liveData
-            valDict["position"] = newPositionsdict['new']
-            valDict["totalpnl"] = updatedPNL.get('pnl')
-            valDict['slHits'] = await getSlHits()
-            # counter+=1
-            # print(valDict)
-            await self.send({
-                'type': 'websocket.send',
-                'text': json.dumps(valDict)
-            })
+        try:
+            while True:
+                valDict = {}
+                # print(updatedPNL['pnl'],"______________________++++++++++pnl data 2")
+                await asyncio.sleep(1)
+                valDict["liveData"] = liveData
+                valDict["position"] = newPositionsdict['new']
+                valDict["totalpnl"] = updatedPNL.get('pnl')
+                valDict['slHits'] = await getSlHits()
+                # counter+=1
+                # print(valDict)
+                await self.send({
+                    'type': 'websocket.send',
+                    'text': json.dumps(valDict)
+                })
+        except Exception as e:
+            print(e);
             # print(subscriberlist, "++++++++Subscriber list++++++++++")
             # sleep(1)
             # print("counter: ", counter)
