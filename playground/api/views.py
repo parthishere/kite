@@ -1260,6 +1260,8 @@ def getPositions(request):
             positions_query =  models.Positions.objects.all()
             data = serializers.PositionsSerializer(positions_query, many=True).data
             return Response({"error":0,"status":"success","data":{"postions":data}})
+        else:
+            return Response({"error":0,"status":"success","data":{"postions":None}})
             
     except Exception as e:
         response = {'error':0,'status':'', "data":""}
