@@ -8,7 +8,7 @@ from .models import ManualWatchlist, AlgoWatchlist
 from time import sleep
 import json
 from kiteconnect import KiteConnect, KiteTicker
-from playground import constants
+from playground import constants_old
 from playground.models import Instruments
 from django.db.models import Q
 import logging
@@ -69,7 +69,7 @@ def updatePNL(pnlValue):
 
 
 def startLiveConnection(token):
-    kws = KiteTicker(api_key=constants.KITE_API_KEY, access_token=token)
+    kws = KiteTicker(api_key=constants_old.KITE_API_KEY, access_token=token)
     kws.on_ticks = on_ticks
     kws.on_connect = on_connect
     kws.connect(threaded=True)
@@ -155,7 +155,7 @@ class MyAsyncConsumer(AsyncConsumer):
             while True:
                 valDict = {}
                 # print(updatedPNL['pnl'],"______________________++++++++++pnl data 2")
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.5)
                 valDict["liveData"] = liveData
                 valDict["position"] = newPositionsdict['new']
                 valDict["totalpnl"] = updatedPNL.get('pnl')

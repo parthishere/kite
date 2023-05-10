@@ -11,7 +11,7 @@ import threading
 from urllib import response
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
-from playground import constants
+# from playground import settings
 from playground.models import DateTimeCheck, Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
 from django.contrib import messages
 from kiteconnect import KiteConnect, KiteTicker
@@ -25,7 +25,6 @@ import time
 from random import randint
 from time import sleep
 from .consumers import liveData, startLiveConnection, updateSubscriberList, updatePostions, updatePNL
-from .constants import KITE_API_KEY
 from django.http import JsonResponse
 from datetime import datetime, date, timedelta, time as dt_time
 from time import gmtime, strftime
@@ -35,9 +34,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 import time
 import pyotp
+from django.conf import settings as st
 
-
-kite = KiteConnect(api_key=constants.KITE_API_KEY)
+kite = KiteConnect(api_key=st.KITE_API_KEY)
 timer = None
 manualWatchlistArray = []
 instrumentArray = []
@@ -57,7 +56,7 @@ coreRunning = False
 
 
 def index(request: HttpRequest):
-    return render(request, 'index.html', context={'api_key': KITE_API_KEY})
+    return render(request, 'index.html', context={'api_key': st.KITE_API_KEY})
 
 
 def login_in_zerodha(api_key, api_secret, user_id, user_pwd, totp_key):
@@ -131,7 +130,7 @@ def loginWithZerodha(request):
     toptKey = topt.now()
     logging.warning("TOTD: %s", toptKey)
     kiteobj = login_in_zerodha(
-        constants.KITE_API_KEY, constants.KITE_API_SECRETE, 'LN7447', 'zzzzaaaa', toptKey)
+        st.KITE_API_KEY, st.KITE_API_SECRET, 'LN7447', 'zzzzaaaa', toptKey)
     print(kiteobj.profile())
     return HttpResponse("success")
 
@@ -140,7 +139,7 @@ def loginUser(request):
     if request.method == 'GET':
         if request.GET['request_token'] != "":
             data = kite.generate_session(
-                request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
+                request.GET['request_token'], api_secret=st.KITE_API_SECRET)
             kite.set_access_token(data["access_token"])
             logging.warning("Access token===== %s", data["access_token"])
             startLiveConnection(str(kite.access_token))

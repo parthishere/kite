@@ -15,13 +15,14 @@ import pyotp
 from .. import models
 from . import serializers
 import json
-from .. import constants
+from .. import constants_old
 from .. import consumers
 from .permissions import CustomPermission
 from rest_framework.permissions import AllowAny
 import django_filters.rest_framework
 from rest_framework import filters
 from ..consumers import liveData
+from time import sleep
 
 kite = views.kite
 
@@ -41,7 +42,7 @@ def login_view(request):
         if request.GET.get('request_token'):
             
             data = kite.generate_session(
-                request.GET['request_token'], api_secret=constants.KITE_API_SECRETE)
+                request.GET['request_token'], api_secret=constants_old.KITE_API_SECRETE)
             kite.set_access_token(data["access_token"])
             logging.warning("Access token===== %s", data["access_token"])
             
@@ -400,7 +401,7 @@ class StartAlgoSingleAPI(APIView):
                 
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).save()
-                
+                sleep(1)
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -462,11 +463,13 @@ class StopAlgoAndManualSingleAPI(APIView):
             is_algo = params["is_algo"] 
             if instrument_name :
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    print("Stop Single from Algowatchlist")
+                    print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False)
                     models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(
                         qty=instrument_quantity)
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).save()
+                    sleep(1)
                 else:
                     print("Stop Single from Manualwatchlist")
                     models.ManualWatchlist.objects.filter(
@@ -477,7 +480,8 @@ class StopAlgoAndManualSingleAPI(APIView):
                         instruments=instrument_name).update(isBuyClicked=False)
                     models.ManualWatchlist.objects.filter(instruments=instrument_name).update(
                         qty=instrument_quantity)
-                    
+                    sleep(1)
+                
                 response['error'] = 0     
                 response['status'] = 'success'
                 response['data'] = 'algowatch/manualwatch stopped'
@@ -575,7 +579,8 @@ class BuySingleManualAPI(APIView):
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="BUY")
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isBuyClicked=True)            
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isBuyClicked=True)          
+                sleep(1)  
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "Bought Single Instument for Manualwatch"
@@ -635,7 +640,8 @@ class SellSingleManualAPI(APIView):
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="SELL")
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isSellClicked=True)            
+                models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isSellClicked=True)   
+                sleep(1)         
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "sold Manual watchlist instrument item"
