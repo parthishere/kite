@@ -88,12 +88,6 @@ def logoutUser(request):
         print("before token")
         print(kite.access_token)
         
-        
-        views.stop_threads = True
-        # if download_thread:
-        #     download_thread.join()
-        views.timer.cancel()
-        
         kite.invalidate_access_token()
         kite.set_access_token(None)
         
@@ -400,9 +394,13 @@ class StartAlgoSingleAPI(APIView):
                 print(instrument_name)  
                 # print("Came from JS to start" + params['instruments'])            
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0)
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, algoStartTime=datetime.utcnow())
+                
+                # removed from here
+                # models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, algoStartTime=datetime.utcnow())
+                
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-               
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).save()
+                
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -850,6 +848,10 @@ class AddInstrumentAPI(APIView):
                     instrumentObjectToAlgoWatchlistObject(instrumentObject)
                     algoWatchObject = models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).values()
+                    
+                    ## Added here
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, algoStartTime=datetime.utcnow())
+                    
                     return Response({"error":0, "status":"success","data":{"instrument": list(algoWatchObject)}})
                     
                 else:

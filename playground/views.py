@@ -225,14 +225,7 @@ def settings(request):
         return render(request, 'settings.html', {'settings': settingsValues})
 
 def logoutUser(request):
-    global timer
-    # if download_thread:
-    #     download_thread.join()
-    try:
-        timer.cancel()
-    except:
-        pass
-    
+   
     kite.invalidate_access_token()
     kite.set_access_token(None)
     logging.warning('Logout called = %s', kite.access_token)
@@ -512,10 +505,7 @@ def CheckTradingTime():
 
 
 def coreLogic():  # A methond to check
-    global timer
-    timer = threading.Timer(0.3, coreLogic)
-    timer.start()
-    
+    threading.Timer(0.3, coreLogic).start()
     checkTrade = CheckTradingTime()
 
     with coreLogicLock:
@@ -889,7 +879,7 @@ def startSingle(request):  # For Algo watchlist
     # print(liveData,"++++++++++++++++++++++++coming from consumers")
     print("Came from JS to start" + request.POST['script'],)
     AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(entryprice=0.0 , slHitCount = 0)
-    AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(startAlgo=True, algoStartTime=datetime.utcnow())
+    # AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(startAlgo=True, algoStartTime=datetime.utcnow())
     AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(qty=int(request.POST['scriptQty']))
     sleep(1)
     return HttpResponse("success")
