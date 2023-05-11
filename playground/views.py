@@ -11,7 +11,6 @@ import threading
 from urllib import response
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpRequest
-# from playground import settings
 from playground.models import DateTimeCheck, Preferences, Instruments, AlgoWatchlist, ManualWatchlist, Positions, Orders
 from django.contrib import messages
 from kiteconnect import KiteConnect, KiteTicker

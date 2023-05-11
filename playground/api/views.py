@@ -15,7 +15,6 @@ import pyotp
 from .. import models
 from . import serializers
 import json
-from .. import constants_old
 from .. import consumers
 from .permissions import CustomPermission
 from rest_framework.permissions import AllowAny
@@ -42,7 +41,7 @@ def login_view(request):
         if request.GET.get('request_token'):
             
             data = kite.generate_session(
-                request.GET['request_token'], api_secret=constants_old.KITE_API_SECRETE)
+                request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
             kite.set_access_token(data["access_token"])
             logging.warning("Access token===== %s", data["access_token"])
             
@@ -73,10 +72,10 @@ def login_view(request):
             response['status'] = "error"
             response["data"] = "User not Authenticated..Try again"
             return Response(response)
-    except:
+    except Exception as e:
         response['error'] = 1
         response['status'] = "error"
-        response["data"] = "User not Authenticated..Try again"
+        response["data"] = f"User not Authenticated..Try again, {str(e)}"
         return Response(response)
         
     
@@ -397,10 +396,10 @@ class StartAlgoSingleAPI(APIView):
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0)
                 
                 # removed from here
-                # models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, algoStartTime=datetime.utcnow())
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
                 
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).save()
+    
                 sleep(1)
                 response['error'] = 0      
                 response['status'] = 'success'
@@ -468,7 +467,6 @@ class StopAlgoAndManualSingleAPI(APIView):
                         instruments=instrument_name).update(startAlgo=False)
                     models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(
                         qty=instrument_quantity)
-                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).save()
                     sleep(1)
                 else:
                     print("Stop Single from Manualwatchlist")
@@ -856,14 +854,15 @@ class AddInstrumentAPI(APIView):
                         instruments=instrument_name).values()
                     
                     ## Added here
-                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, algoStartTime=datetime.utcnow())
-                    
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=False, algoStartTime=datetime.utcnow())
+                    sleep(1)
                     return Response({"error":0, "status":"success","data":{"instrument": list(algoWatchObject)}})
                     
                 else:
                     instrumentObjectToManualWatchlistObject(instrumentObject)
                     manualWatchObject = models.ManualWatchlist.objects.filter(
                         instruments=instrument_name).values()
+                    sleep(1)
                     return Response({"error":0, "status":"success","data":{"instrument": list(manualWatchObject)}})
                     
             else:
