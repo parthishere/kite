@@ -33,10 +33,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 import time
 import pyotp
+
 from django.conf import settings as st
 
 kite = KiteConnect(api_key=st.KITE_API_KEY)
-timer = None
 manualWatchlistArray = []
 instrumentArray = []
 positionArray = []
@@ -223,13 +223,11 @@ def settings(request):
         return render(request, 'settings.html', {'settings': settingsValues})
 
 def logoutUser(request):
-   
     kite.invalidate_access_token()
     kite.set_access_token(None)
     logging.warning('Logout called = %s', kite.access_token)
     kite.invalidate_access_token()
     return redirect("/")
-
 
 # =========================
 # All Supported Functions
@@ -336,7 +334,7 @@ def settings_exists():
 
 def getPositions():
     positionsdict = kite.positions()
-    #print(positionsdict)
+    
 
     for pos in range(len(positionsdict['net'])):
         if (l_data := liveData.get(positionsdict['net'][pos]['tradingsymbol'])):
@@ -347,18 +345,27 @@ def getPositions():
             if positionsdict['net'][pos]['quantity'] != 0 :             # used for % profit 
                     positionsdict['net'][pos]['last_price']  = ( positionsdict['net'][pos]['pnl'] / (positionsdict['net'][pos]['average_price']*0.20*positionsdict['net'][pos]['quantity']) )*100 
             else :
-                if positionsdict['net'][pos]['buy_quantity'] != 0 :
-                    positionsdict['net'][pos]['last_price']  = ((( positionsdict['net'][pos]['day_sell_price'] - positionsdict['net'][pos]['day_buy_price'])/positionsdict['net'][pos]['day_buy_quantity'] )*100*5)/ ( positionsdict['net'][pos]['day_buy_price']/positionsdict['net'][pos]['day_buy_quantity'] )
+                    if positionsdict['net'][pos]['buy_quantity'] != 0 :
+                        positionsdict['net'][pos]['last_price']  = (( positionsdict['net'][pos]['day_sell_price'] - positionsdict['net'][pos]['day_buy_price'] )*100*5*positionsdict['net'][pos]['day_buy_quantity'])/ positionsdict['net'][pos]['day_buy_price']
 
             if positionsdict['net'][pos]['quantity']==0 :
-                positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['day_buy_quantity']
+                positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']
             else:
                 positionsdict['net'][pos]['average_price']=  positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['quantity']
 
             if positionsdict['net'][pos]['quantity']< 0 :
                 if positionsdict['net'][pos]['pnl'] < 0 :
                     positionsdict['net'][pos]['average_price'] = 0 - positionsdict['net'][pos]['average_price'] 
-          
+
+            #positionsdict['net'][pos]['m2m'] = AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"]
+            
+            # for pos in AlgoWatchlist.objects.all():
+            #     data['AlgoWatch'][instrument.instruments] = instrument.slHitCount
+
+            # for instrument in ManualWatchlist.objects.all():
+            #     data['ManualWatch'][instrument.slHitCount] = instrument.slHitCount
+
+            
 
                 
     #print(positionsdict)
@@ -367,6 +374,9 @@ def getPositions():
     entryPrice = 0.0
 
     # print(positions)  #"+{}".format(round(float(pnl),2)) if float(pnl) > 0 else round(float(pnl),2)
+    # print(positions)
+    # return;
+    # return;
     if len(positions) > 0:
         # if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
         for position in positions:
@@ -436,16 +446,19 @@ def getPositions():
             if int(position['quantity']) == 0:
                 ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
                     openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
+                # print("will be called ++++++++++++++++++++ 1")
                 AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
                     openPostion=False, startAlgo=False)
                 # print("Checking for closed postion " + position['tradingsymbol'])
                 if not position_exists(position['tradingsymbol']):
                     print(pnl,'not posi')
+                    # print("will be called ++++++++++++++++++++ 2")
                     positionObject = Positions(instruments=position['tradingsymbol'], qty=position['quantity'], entryprice=0.0, avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
                         position['last_price'], 2), pnl=pnl, unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
                     positionObject.save()
                 else:
-                    print("Updating New Positions",pnl)
+                    # print("Updating New Positions",pnl)
+                    # print("will be called ++++++++++++++++++++ 3")
                     Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
                         position['last_price'], 2), pnl=pnl, unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
     # else:
@@ -693,7 +706,9 @@ def watchForManualListBuySellLogic():
                 else:
                     print("Nothing to trade from Manual Watchlist")
             elif items.startAlgo and items.openPostion:
-                postions = Positions.objects.filter(instruments=items.instruments)
+
+                postions = Positions.objects.filter(
+                    instruments=items.instruments)
                 if postions:
                     potionObject = postions.values()[0]
                     # print(potionObject)
@@ -872,14 +887,22 @@ def sellSingle(request):  # For Manual watchlist
     sleep(1)
     return HttpResponse("success")
 
+from django.db import transaction
 
+@csrf_exempt
 def startSingle(request):  # For Algo watchlist
     # print(liveData,"++++++++++++++++++++++++coming from consumers")
-    print("Came from JS to start" + request.POST['script'],)
-    AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(entryprice=0.0 , slHitCount = 0)
-    # AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(startAlgo=True, algoStartTime=datetime.utcnow())
-    AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(qty=int(request.POST['scriptQty']))
+    print("Came from JS to start " + request.POST['script'], request.POST['scriptQty'])
+
+    AlgoWatchlist.objects.filter(instruments=request.POST['script']).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, algoStartTime=datetime.utcnow(), qty=int(request.POST['scriptQty']))
+
+    
     sleep(1)
+    
+    
+    # transaction.commit()
+    # obj.save()
+    
     return HttpResponse("success")
 
 
@@ -1085,23 +1108,26 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
             if position_exists(scriptCode):
                 Positions.objects.filter(instruments=scriptCode).update(qty=0)
         getPositions()
-  
+    #winsound.PlaySound('./playy.mp3', winsound.SND_FILENAME|winsound.SND_NOWAIT)
+   
+   
+    # winsound.PlaySound("SystemQuestion", winsound.SND_NOWAIT)  
     #winsound.Beep(440, 500)
 
 def getPositionAndUpdateModels(ltp, scriptCode, orderId, type):
     if type == "BUY":
         result = calculateSLTGPrice(ltp, type)
-        print(f"Modified SL Price ({scriptCode})= " + str(result[0]))
-        print(f"Modified TG Price ({scriptCode})= " + str(result[1]))
-        print(f"Modified LTP ({scriptCode})= " + str(ltp))
+        # print(f"Modified SL Price ({scriptCode})= " + str(result[0]))
+        # print(f"Modified TG Price ({scriptCode})= " + str(result[1]))
+        # print(f"Modified LTP ({scriptCode})= " + str(ltp))
         if position_exists(scriptCode):
             Positions.objects.filter(instruments=scriptCode).update(
                 slPrice=result[0], tgPrice=result[1], entryprice=ltp, orderId=orderId, positionType="BUY")
     else:
         result = calculateSLTGPrice(ltp, type)
-        print(f"Modified SL Price ({scriptCode})= " + str(result[0]))
-        print(f"Modified TG Price ({scriptCode})= " + str(result[1]))
-        print(f"Modified LTP ({scriptCode})= " + str(ltp))
+        # print(f"Modified SL Price ({scriptCode})= " + str(result[0]))
+        # print(f"Modified TG Price ({scriptCode})= " + str(result[1]))
+        # print(f"Modified LTP ({scriptCode})= " + str(ltp))
         if position_exists(scriptCode):
             Positions.objects.filter(instruments=scriptCode).update(
                 slPrice=result[0], tgPrice=result[1], entryprice=ltp, orderId=orderId, positionType="SELL")

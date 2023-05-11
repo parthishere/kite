@@ -1,9 +1,11 @@
 from email.policy import default
 from datetime import time
 from operator import mod
+from typing import Iterable, Optional
 from django.db import models
 
 # Create your models here.
+
 
 class Preferences(models.Model):
     time = models.TimeField(default=time(hour=10))
@@ -36,6 +38,8 @@ class AlgoWatchlist(models.Model):
     instrumentType = models.CharField(max_length=100, default="CE")
     slHitCount = models.IntegerField(default=0)
 
+
+   
 
 class ManualWatchlist(models.Model):
     instruments = models.CharField(max_length=100)
@@ -103,4 +107,3 @@ class Instruments(models.Model):
     instrument_type = models.CharField(max_length=100)
     segment = models.CharField(max_length=100)
     exchange = models.CharField(max_length=100)
-

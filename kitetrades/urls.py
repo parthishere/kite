@@ -21,7 +21,6 @@ from rest_framework.schemas import get_schema_view
 from rest_framework.documentation import include_docs_urls
 
 
-
 admin.site.site_header = "OpenAlgo Admin"
 admin.site.site_title = "OpenAlgo Admin Portal"
 admin.site.index_title = "Welcome to OpenAlgo Portal"
@@ -39,8 +38,6 @@ urlpatterns = [
         title="API",
         description="API for the Trading App",
     ), name="social-docs")
-] 
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL,document_root=settings.STATIC_ROOT)
-    # urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+# + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

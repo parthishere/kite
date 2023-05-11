@@ -388,18 +388,23 @@ class StartAlgoSingleAPI(APIView):
             return Response(response) 
         try:     
             params = json.loads(request.body)       
-            instrument_name = params.get("instrument")   
-            instrument_quantity = params.get("instrumentQuantity") 
+            
+
+
             if instrument_name: 
                 print(instrument_name)  
                 # print("Came from JS to start" + params['instruments'])            
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0)
+                # models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0)
                 
                 # removed from here
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
-                
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
-    
+                # models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True)
+                obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
+                obj.startAlgo = True
+                obj.entryprice=0.0 
+                obj.slHitCount = 0
+                obj.qty=instrument_quantity
+                # models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(qty=instrument_quantity)
+                obj.save()
                 sleep(1)
                 response['error'] = 0      
                 response['status'] = 'success'
@@ -1147,9 +1152,7 @@ def getPositions(request):
         return Response(response)
     try:
         positionsdict = kite.positions()
-        
-     
-        #print(positionsdict)
+    
 
         for pos in range(len(positionsdict['net'])):
             if (l_data := liveData.get(positionsdict['net'][pos]['tradingsymbol'])):
@@ -1160,22 +1163,31 @@ def getPositions(request):
                 if positionsdict['net'][pos]['quantity'] != 0 :             # used for % profit 
                         positionsdict['net'][pos]['last_price']  = ( positionsdict['net'][pos]['pnl'] / (positionsdict['net'][pos]['average_price']*0.20*positionsdict['net'][pos]['quantity']) )*100 
                 else :
-                    if positionsdict['net'][pos]['buy_quantity'] != 0 :
-                        positionsdict['net'][pos]['last_price']  = ((( positionsdict['net'][pos]['day_sell_price'] - positionsdict['net'][pos]['day_buy_price'])/positionsdict['net'][pos]['day_buy_quantity'] )*100*5)/ ( positionsdict['net'][pos]['day_buy_price']/positionsdict['net'][pos]['day_buy_quantity'] )
+                        if positionsdict['net'][pos]['buy_quantity'] != 0 :
+                            positionsdict['net'][pos]['last_price']  = (( positionsdict['net'][pos]['day_sell_price'] - positionsdict['net'][pos]['day_buy_price'] )*100*5*positionsdict['net'][pos]['day_buy_quantity'])/ positionsdict['net'][pos]['day_buy_price']
 
                 if positionsdict['net'][pos]['quantity']==0 :
-                    positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['day_buy_quantity']
+                    positionsdict['net'][pos]['average_price']= positionsdict['net'][pos]['pnl']
                 else:
                     positionsdict['net'][pos]['average_price']=  positionsdict['net'][pos]['pnl']/positionsdict['net'][pos]['quantity']
 
                 if positionsdict['net'][pos]['quantity']< 0 :
                     if positionsdict['net'][pos]['pnl'] < 0 :
                         positionsdict['net'][pos]['average_price'] = 0 - positionsdict['net'][pos]['average_price'] 
-            
+
+                #positionsdict['net'][pos]['m2m'] = AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"]
+                
+                # for pos in AlgoWatchlist.objects.all():
+                #     data['AlgoWatch'][instrument.instruments] = instrument.slHitCount
+
+                # for instrument in ManualWatchlist.objects.all():
+                #     data['ManualWatch'][instrument.slHitCount] = instrument.slHitCount
+
+                
 
                     
         #print(positionsdict)
-        consumers.updatePostions(positionsdict)
+        views.updatePostions(positionsdict)
         positions = positionsdict['net']
         entryPrice = 0.0
 
@@ -1258,7 +1270,7 @@ def getPositions(request):
                             position['last_price'], 2), pnl=pnl, unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
                         positionObject.save()
                     else:
-                        print("Updating New Positions",pnl)
+                        # print("Updating New Positions",pnl)
                         models.Positions.objects.filter(instruments=position['tradingsymbol']).update(qty=position['quantity'], avgTradedPrice=round(position['average_price'], 2), lastTradedPrice=round(
                             position['last_price'], 2), pnl=pnl, unrealised=position['unrealised'], realised=position['realised'], startAlgo=False)
         # else:
