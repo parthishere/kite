@@ -38,7 +38,7 @@ def login_view(request):
     """
     response = {'error':0,'status':'', "data":""}  
     try:
-        if request.GET.get('request_token'):
+        if request.GET['request_token']:
             
             data = kite.generate_session(
                 request.GET['request_token'], api_secret=settings.KITE_API_SECRET)
