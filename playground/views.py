@@ -413,7 +413,7 @@ def getPositions():
                         position['average_price'], 2), pnl=round(pnl, 3), startAlgo=True)
 
             # For Open sell position
-            if int(position['quantity']) < 0:
+            elif int(position['quantity']) < 0:
                 # print("Checking for Sell postion " + position['tradingsymbol'])
                 setQty = abs(position['quantity'])
 
@@ -443,7 +443,7 @@ def getPositions():
                         position['average_price'], 2), pnl=round(float(pnl), 3), startAlgo=True)
 
             # For Closed Positions
-            if int(position['quantity']) == 0:
+            elif int(position['quantity']) == 0:
                 ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
                     openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
                 # print("will be called ++++++++++++++++++++ 1")

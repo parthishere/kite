@@ -460,6 +460,7 @@ class StopAlgoAndManualSingleAPI(APIView):
             if instrument_name :
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
+                    
                     models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
                     
