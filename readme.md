@@ -1,7 +1,7 @@
 run docker compose --build to run the service but before that add .env file in the hierarchy
 and add following items
 
-`
+
 KITE_API_KEY=
 KITE_API_SECRET=
 
@@ -13,4 +13,3 @@ DATABASE_USER=
 DATABASE_PASSWORD=
 DATABASE_HOST=
 DATABASE_PORT=
-`
