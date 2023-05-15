@@ -391,18 +391,19 @@ class StartAlgoSingleAPI(APIView):
             
             instrument_name = params['instrument']
             instrument_quantity = params['instrumentQuantity']
+            
             instrumentObject = models.Instruments.objects.filter(
                     tradingsymbol=instrument_name).values()
             instumentData = instrumentObject[0]
-            
-            if instrument_name:               
+            print(instumentData["tradingsymbol"])
+            if instrument_name and instumentData["tradingsymbol"] == instrument_name:               
                 
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
                 
                 consumers.updateSubscriberList(
                     instumentData["instrument_token"], instumentData["tradingsymbol"], True)
               
-                sleep(1)
+                sleep(2)
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -462,27 +463,29 @@ class StopAlgoAndManualSingleAPI(APIView):
             instrument_name = params['instrument']
             instrument_quantity = params['instrumentQuantity']
             is_algo = params["is_algo"] 
-            if instrument_name :
-                
-                instrumentObject = models.Instruments.objects.filter(
+            instrumentObject = models.Instruments.objects.filter(
                     tradingsymbol=instrument_name).values()
-                instumentData = instrumentObject[0]
+            instumentData = instrumentObject[0]
             
+            if instrument_name and instumentData["tradingsymbol"] == instrument_name:
+                
+                
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     
                     models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
                    
-                    sleep(1)
+                    
                 else:
                     print("Stop Single from Manualwatchlist")
                     models.ManualWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, isSellClicked=False, isBuyClicked=False, qty=int(instrument_quantity))
-                    
-                    sleep(1)
+                
                 consumers.updateSubscriberList(
                         instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                sleep(2)
+                
                 
                 response['error'] = 0     
                 response['status'] = 'success'

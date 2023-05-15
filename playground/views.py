@@ -33,6 +33,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 import time
 import pyotp
+from playground import consumers
 
 from django.conf import settings as st
 
@@ -41,7 +42,7 @@ manualWatchlistArray = []
 instrumentArray = []
 positionArray = []
 ordersArray = []
-subscriberlist = {}
+subscriberlist = consumers.subscriberlist 
 positiondict = {}
 timeToStart = 0.0
 # liveData = {}
@@ -357,14 +358,6 @@ def getPositions():
                 if positionsdict['net'][pos]['pnl'] < 0 :
                     positionsdict['net'][pos]['average_price'] = 0 - positionsdict['net'][pos]['average_price'] 
 
-            #positionsdict['net'][pos]['m2m'] = AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).values()[0]["entryprice"]
-            
-            # for pos in AlgoWatchlist.objects.all():
-            #     data['AlgoWatch'][instrument.instruments] = instrument.slHitCount
-
-            # for instrument in ManualWatchlist.objects.all():
-            #     data['ManualWatch'][instrument.slHitCount] = instrument.slHitCount
-
             
 
                 
@@ -373,10 +366,6 @@ def getPositions():
     positions = positionsdict['net']
     entryPrice = 0.0
 
-    # print(positions)  #"+{}".format(round(float(pnl),2)) if float(pnl) > 0 else round(float(pnl),2)
-    # print(positions)
-    # return;
-    # return;
     if len(positions) > 0:
         # if position is open in zerodha then update openPostion,startAlgo,exchangeType, isBuyClicked, isSellClicked, qty (check buy_quantity and sell_quantity value if both same then position is closed and if anyone is more than 0 then consider that postion is open)
         for position in positions:
@@ -516,7 +505,8 @@ def CheckTradingTime():
 
 
 def coreLogic():  # A methond to check
-    threading.Timer(0.3, coreLogic).start()
+    
+    threading.Timer(0.5, coreLogic).start()
     checkTrade = CheckTradingTime()
 
     with coreLogicLock:
@@ -529,7 +519,7 @@ def coreLogic():  # A methond to check
 
 
 def watchForAlgowatchlistBuySellLogic():
-
+    
     # print("++++++++++++++++++++++++Algowatchlist Positions++++++++++++++++")
     algoArray = AlgoWatchlist.objects.all()
     # print(algoArray, "++++++++++++++++Algo Array Values=============")

@@ -37,7 +37,10 @@ def updateSubscriberList(token, tradingSymbol, isSubscribe):
         subscriberlist[int(token)] = tradingSymbol
     else:
         if len(subscriberlist) > 0:
-            subscriberlist.pop(int(token), None)
+            try:
+                subscriberlist.pop(int(token))
+            except Exception as e:
+                print(e)
 
 
 def updatePostions(positionsdict):
@@ -136,6 +139,7 @@ def on_connect(ws, response):
 def on_close(ws: KiteTicker, code, reason):
     # On connection close stop the main loop
     # Reconnection will not happen after executing `ws.stop()`
+    subscriptionStatus(ws)
     ws.stop()
 
 
