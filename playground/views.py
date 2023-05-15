@@ -1046,11 +1046,13 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
         orderId = ""
         orderId = kite.place_order(variety=kite.VARIETY_REGULAR, exchange=exchangeType,
                                    tradingsymbol=scriptCode, transaction_type=type, quantity=abs(
-                                       scriptQty),
+                                       int(scriptQty)),
                                    product=kite.PRODUCT_MIS, order_type=kite.ORDER_TYPE_MARKET, validity=kite.VALIDITY_DAY)
 
     except Exception as e:
         # logging.info("Order placement failed ")
+        print(e)
+        print("order failed")
         if isFromAlgo:
             AlgoWatchlist.objects.filter(
                 instruments=scriptCode).update(openPostion=False)
@@ -1097,6 +1099,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
                     instruments=scriptCode).update(openPostion=False)
             if position_exists(scriptCode):
                 Positions.objects.filter(instruments=scriptCode).update(qty=0)
+                
         getPositions()
     #winsound.PlaySound('./playy.mp3', winsound.SND_FILENAME|winsound.SND_NOWAIT)
    
