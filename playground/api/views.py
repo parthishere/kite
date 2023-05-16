@@ -396,14 +396,16 @@ class StartAlgoSingleAPI(APIView):
                     tradingsymbol=instrument_name).values()
             instumentData = instrumentObject[0]
             print(instumentData["tradingsymbol"])
-            if instrument_name and instumentData["tradingsymbol"] == instrument_name:               
+            if instrument_name and instumentData["tradingsymbol"] == instrument_name:     
+                consumers.updateSubscriberList(
+                    instumentData["instrument_token"], instumentData["tradingsymbol"], True)          
                 
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
                 
                 consumers.updateSubscriberList(
                     instumentData["instrument_token"], instumentData["tradingsymbol"], True)
               
-                sleep(2)
+                sleep(0.8)
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -469,7 +471,8 @@ class StopAlgoAndManualSingleAPI(APIView):
             
             if instrument_name and instumentData["tradingsymbol"] == instrument_name:
                 
-                
+                consumers.updateSubscriberList(
+                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     
@@ -484,7 +487,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                 
                 consumers.updateSubscriberList(
                         instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-                sleep(2)
+                sleep(0.8)
                 
                 
                 response['error'] = 0     
