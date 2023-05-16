@@ -1069,7 +1069,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
             if isFromAlgo:
                 logging.warning("Algo Open Position Updated=================")
                 AlgoWatchlist.objects.filter(
-                    instruments=scriptCode).update(openPostion=True, algoStartTime=datetime.now())
+                    instruments=scriptCode).update(openPostion=True)
 
                 entryPrice11 = float(AlgoWatchlist.objects.filter(instruments=scriptCode).values()[0]["entryprice"])
                 if entryPrice11==0.0:
