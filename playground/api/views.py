@@ -863,8 +863,8 @@ class AddInstrumentAPI(APIView):
                         instruments=instrument_name).values()
                     
                     ## Added here
-                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=False, algoStartTime=datetime.utcnow())
-                    sleep(1)
+                    models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=False)
+                    sleep(0.5)
                     
                     return Response({"error":0, "status":"success","data":{"instrument": list(algoWatchObject)}})
                     
