@@ -38,6 +38,7 @@ from playground import consumers
 from django.conf import settings as st
 
 kite = KiteConnect(api_key=st.KITE_API_KEY)
+timer = None
 manualWatchlistArray = []
 instrumentArray = []
 positionArray = []
@@ -505,8 +506,9 @@ def CheckTradingTime():
 
 
 def coreLogic():  # A methond to check
-    
-    threading.Timer(0.5, coreLogic).start()
+    global timer
+    timer = threading.Timer(0.5, coreLogic)
+    timer.start()
     checkTrade = CheckTradingTime()
 
     with coreLogicLock:

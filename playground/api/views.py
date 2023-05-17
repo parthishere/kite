@@ -396,16 +396,20 @@ class StartAlgoSingleAPI(APIView):
                     tradingsymbol=instrument_name).values()
             instumentData = instrumentObject[0]
             print(instumentData["tradingsymbol"])
-            if instrument_name and instumentData["tradingsymbol"] == instrument_name:     
+            if instrument_name and instumentData["tradingsymbol"] == instrument_name: 
+                views.timer.cancel()
                 consumers.updateSubscriberList(
                     instumentData["instrument_token"], instumentData["tradingsymbol"], True)          
-                
+                sleep(0.1)
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
+                sleep(0.1)
                 
                 consumers.updateSubscriberList(
                     instumentData["instrument_token"], instumentData["tradingsymbol"], True)
-              
-                sleep(0.8)
+                sleep(0.1)
+                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
+                sleep(0.1)
+                views.coreLogic()
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
@@ -470,15 +474,52 @@ class StopAlgoAndManualSingleAPI(APIView):
             instumentData = instrumentObject[0]
             
             if instrument_name and instumentData["tradingsymbol"] == instrument_name:
+                # views.timer.cancel()
                 
-                consumers.updateSubscriberList(
-                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
                 if is_algo == True or is_algo == "true" or is_algo == 1:
+                    views.timer.cancel()
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
-                    
+                    consumers.updateSubscriberList(
+                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                    sleep(0.1)
                     models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
-                   
+                    algo_obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
+                    sleep(0.1)
+                    consumers.updateSubscriberList(
+                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                    sleep(0.1)
+                    
+                    
+                    settings = models.Preferences.objects.all()
+                    liveValues = liveData[algo_obj.instruments]
+                    ordp = settings.values()[0]['openingrange']
+                    tg = settings.values()[0]['target']
+                    # SL : Get % value from settings
+                    sl = settings.values()[0]['stoploss']
+                    # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+                    partValue = (ordp*liveValues['Open'])/100
+                    ubl = liveValues['Open'] + partValue
+                    # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+                    lbl = liveValues['Open'] - partValue
+                    postions = models.Positions.objects.filter(
+                    instruments=instrument_name)
+                    if postions:
+                        potionObject = postions.values()[0]
+                        setQty = abs(potionObject['qty'])
+                        print(
+                            "Not SL ot TG achived but manuaaly - Close Postions and stop algo")
+                        models.AlgoWatchlist.objects.filter(
+                            instruments=instrument_name).update(openPostion=False)
+                        if potionObject['positionType'] == "BUY":
+                            print('SCRIPT QUANTITY=========================', 9)
+                            views.tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType=algo_obj.exchangeType, sl=sl, tg=tg,
+                                                ltp=liveValues['LTP'], scriptCode=algo_obj.instruments, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+                        if potionObject['positionType'] == "SELL":
+                            print('SCRIPT QUANTITY=========================', 10)
+                            views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType=algo_obj.exchangeType, sl=sl, tg=tg,
+                                                ltp=liveValues['LTP'], scriptCode=algo_obj.instruments, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+                    views.coreLogic()
                     
                 else:
                     print("Stop Single from Manualwatchlist")
@@ -487,12 +528,13 @@ class StopAlgoAndManualSingleAPI(APIView):
                 
                 consumers.updateSubscriberList(
                         instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-                sleep(0.8)
+            
                 
                 
                 response['error'] = 0     
                 response['status'] = 'success'
                 response['data'] = 'algowatch/manualwatch stopped'
+                # views.timer.start()
                 return Response(response)
             else:
                 response['error'] = 1
