@@ -434,11 +434,16 @@ def getPositions():
 
             # For Closed Positions
             elif int(position['quantity']) == 0:
+                
                 ManualWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
                     openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
-                # print("will be called ++++++++++++++++++++ 1")
-                AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(
-                    openPostion=False, startAlgo=False)
+                
+                if(CheckTradingTime()):
+                    print("will be called ++++++++++++++++++++ fucking")
+                    AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=False,startAlgo=False)
+                else:
+                    # AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(startAlgo=False)
+                    pass
                 # print("Checking for closed postion " + position['tradingsymbol'])
                 if not position_exists(position['tradingsymbol']):
                     print(pnl,'not posi')
@@ -507,7 +512,7 @@ def CheckTradingTime():
 
 def coreLogic():  # A methond to check
     global timer
-    timer = threading.Timer(0.5, coreLogic)
+    timer = threading.Timer(0.3, coreLogic)
     timer.start()
     checkTrade = CheckTradingTime()
 
@@ -551,6 +556,7 @@ def watchForAlgowatchlistBuySellLogic():
             # print("Checking algo for " + items.instruments)
             # IF_Check if Algo is started and Not any positon open for that script
             if items.startAlgo and not items.openPostion:
+                print("+++++++++++++++++++++++++++ 1")
                 if ordtick:  # IF_ORD True check if open is in range
                     # IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
                     if (liveValues['LTP'] > liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl):
@@ -589,6 +595,7 @@ def watchForAlgowatchlistBuySellLogic():
                     
             # ELSEIF_check if Algo is started and Position Open (Either Buy or Sell)
             elif items.startAlgo and items.openPostion:
+                print("+++++++++++++++++++++++++++ 2")
                 postions = Positions.objects.filter(
                     instruments=items.instruments)
                 if postions:
@@ -645,6 +652,7 @@ def watchForAlgowatchlistBuySellLogic():
                         #     print("Position SELLALGO, No SL, No TG so continue")
             # ELSE_check if algo is stopped and Position Open (Either Buy or Sell)
             elif not items.startAlgo and items.openPostion:
+                print("+++++++++++++++++++++++++++ 3")
                 postions = Positions.objects.filter(
                     instruments=items.instruments)
                 if postions:
