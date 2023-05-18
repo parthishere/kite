@@ -21,7 +21,6 @@ from rest_framework.permissions import AllowAny
 import django_filters.rest_framework
 from rest_framework import filters
 from ..consumers import liveData
-from time import sleep
 
 kite = views.kite
 
@@ -627,7 +626,7 @@ class BuySingleManualAPI(APIView):
                 
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=True, positionType="BUY", qty=int(instrument_quantity), isBuyClicked=True)
                           
-                sleep(1)  
+                  
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "Bought Single Instument for Manualwatch"
@@ -688,7 +687,7 @@ class SellSingleManualAPI(APIView):
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(positionType="SELL")
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(qty=int(instrument_quantity))
                 models.ManualWatchlist.objects.filter(instruments=instrument_name).update(isSellClicked=True)   
-                sleep(1)         
+                         
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "sold Manual watchlist instrument item"
@@ -904,7 +903,7 @@ class AddInstrumentAPI(APIView):
                     
                     ## Added here
                     models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(startAlgo=False)
-                    sleep(0.5)
+                    (0.5)
                     
                     return Response({"error":0, "status":"success","data":{"instrument": list(algoWatchObject)}})
                     
@@ -912,7 +911,7 @@ class AddInstrumentAPI(APIView):
                     instrumentObjectToManualWatchlistObject(instrumentObject)
                     manualWatchObject = models.ManualWatchlist.objects.filter(
                         instruments=instrument_name).values()
-                    sleep(1)
+                    
                     return Response({"error":0, "status":"success","data":{"instrument": list(manualWatchObject)}})
                     
             else:
