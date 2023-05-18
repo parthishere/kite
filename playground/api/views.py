@@ -397,22 +397,18 @@ class StartAlgoSingleAPI(APIView):
             instumentData = instrumentObject[0]
             print(instumentData["tradingsymbol"])
             if instrument_name and instumentData["tradingsymbol"] == instrument_name: 
-                views.timer.cancel()
-                consumers.updateSubscriberList(
-                    instumentData["instrument_token"], instumentData["tradingsymbol"], True)          
-                sleep(0.1)
+                views.timer.cancel()      
+                # AlgoWatchAdd()
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
-                sleep(0.1)
                 
                 consumers.updateSubscriberList(
                     instumentData["instrument_token"], instumentData["tradingsymbol"], True)
-                sleep(0.1)
-                models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
-                sleep(0.1)
-                views.coreLogic()
+            
+                
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
+                views.coreLogic()
                 return Response(response)
             else:
                 response['error'] = 1
@@ -474,21 +470,23 @@ class StopAlgoAndManualSingleAPI(APIView):
             instumentData = instrumentObject[0]
             
             if instrument_name and instumentData["tradingsymbol"] == instrument_name:
-                # views.timer.cancel()
                 
                 if is_algo == True or is_algo == "true" or is_algo == 1:
                     views.timer.cancel()
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
-                    consumers.updateSubscriberList(
-                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-                    sleep(0.1)
+                    
+                    # consumers.updateSubscriberList(
+                    #     instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+           
                     models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
-                    algo_obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
-                    sleep(0.1)
                     consumers.updateSubscriberList(
                         instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-                    sleep(0.1)
+                     
+                    algo_obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
+                    
+                   
+                    
                     
                     
                     settings = models.Preferences.objects.all()
