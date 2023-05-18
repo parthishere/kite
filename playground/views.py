@@ -439,7 +439,6 @@ def getPositions():
                     openPostion=False, startAlgo=False, positionType="", isBuyClicked=False, isSellClicked=False)
                 
                 if(CheckTradingTime()):
-                    print("will be called ++++++++++++++++++++ fucking")
                     AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(openPostion=False,startAlgo=False)
                 else:
                     # AlgoWatchlist.objects.filter(instruments=position['tradingsymbol']).update(startAlgo=False)
