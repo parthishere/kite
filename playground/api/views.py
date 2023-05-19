@@ -476,7 +476,7 @@ class StopAlgoAndManualSingleAPI(APIView):
             if instrument_name and instumentData["tradingsymbol"] == instrument_name:
                 
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    views.timer.cancel()
+                    # views.timer.cancel()
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     
                     # consumers.updateSubscriberList(
@@ -521,7 +521,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                             print('SCRIPT QUANTITY=========================', 10)
                             views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType=algo_obj.exchangeType, sl=sl, tg=tg,
                                                 ltp=liveValues['LTP'], scriptCode=algo_obj.instruments, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
-                    views.coreLogic()
+                    # views.coreLogic()
                     
                 else:
                     print("Stop Single from Manualwatchlist")

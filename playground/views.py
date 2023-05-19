@@ -39,7 +39,6 @@ from django.conf import settings as st
 
 kite = KiteConnect(api_key=st.KITE_API_KEY)
 timer = None
-fetchAlgoWatch = False
 manualWatchlistArray = []
 instrumentArray = []
 positionArray = []
@@ -557,7 +556,7 @@ def watchForAlgowatchlistBuySellLogic():
             # IF_Check if Algo is started and Not any positon open for that script
             if items.startAlgo and not items.openPostion:
                 print("+++++++++++++++++++++++++++ 1")
-                fetchAlgoWatch = False
+                # fetchAlgoWatch = False
                 if ordtick:  # IF_ORD True check if open is in range
                     # IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
                     if (liveValues['LTP'] > liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl):
@@ -599,7 +598,7 @@ def watchForAlgowatchlistBuySellLogic():
                 
                 
                 
-                fetchAlgoWatch = True
+                # fetchAlgoWatch = True
                 postions = Positions.objects.filter(
                     instruments=items.instruments)
                 
@@ -658,7 +657,7 @@ def watchForAlgowatchlistBuySellLogic():
                         #     print("Position SELLALGO, No SL, No TG so continue")
             # ELSE_check if algo is stopped and Position Open (Either Buy or Sell)
             elif not items.startAlgo and items.openPostion:
-                fetchAlgoWatch = False
+                # fetchAlgoWatch = False
                 print("+++++++++++++++++++++++++++ 3")
                 postions = Positions.objects.filter(
                     instruments=items.instruments)
