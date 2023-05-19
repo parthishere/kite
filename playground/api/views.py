@@ -390,7 +390,8 @@ class StartAlgoSingleAPI(APIView):
             response['status'] = "error"
             response["data"] = "User not Authenticated..Please log in"
             return Response(response) 
-        try:     
+        try:  
+   
             params = json.loads(request.body)       
             
             instrument_name = params['instrument']
@@ -401,7 +402,7 @@ class StartAlgoSingleAPI(APIView):
             instumentData = instrumentObject[0]
             print(instumentData["tradingsymbol"])
             if instrument_name and instumentData["tradingsymbol"] == instrument_name: 
-                # views.timer.cancel()      
+                views.timer.cancel()      
                 
                 AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
                 
@@ -414,7 +415,7 @@ class StartAlgoSingleAPI(APIView):
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
-                # views.coreLogic()
+                views.coreLogic()
                 return Response(response)
             else:
                 response['error'] = 1
@@ -478,7 +479,7 @@ class StopAlgoAndManualSingleAPI(APIView):
             if instrument_name and instumentData["tradingsymbol"] == instrument_name:
                 
                 if is_algo == True or is_algo == "true" or is_algo == 1:
-                    # views.timer.cancel()
+                    views.timer.cancel()
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     
                     AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
@@ -522,7 +523,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                             print('SCRIPT QUANTITY=========================', 10)
                             views.tradeInitiateWithSLTG(type="BUY", scriptQty=setQty, exchangeType=algo_obj.exchangeType, sl=sl, tg=tg,
                                                 ltp=liveValues['LTP'], scriptCode=algo_obj.instruments, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
-                    # views.coreLogic()
+                    views.coreLogic()
                     
                 else:
                     print("Stop Single from Manualwatchlist")
