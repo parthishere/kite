@@ -44,6 +44,7 @@ def updateSubscriberList(token, tradingSymbol, isSubscribe):
                 print(e)
 
 
+
 def updatePostions(positionsdict):
     newPositionsdict["new"] = positionsdict
 
@@ -124,7 +125,16 @@ def on_ticks(ws, ticks):
         #         liveValues = liveData[items.instruments]
         #         print(liveValues['LTP'])
 
-
+def AlgoWatchLogic(token, tradingSymbol, isSubscribe):
+    if isSubscribe:
+        subscriberlist[int(token)] = tradingSymbol
+    else:
+        if len(subscriberlist) > 0:
+            try:
+                subscriberlist.pop(int(token))
+            except Exception as e:
+                print(e)
+                
 def subscriptionStatus(ws: KiteTicker):
     instrument_tokens = list(defaultsubscriberlist.keys()
                              ) + list(subscriberlist.keys())

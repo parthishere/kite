@@ -20,7 +20,7 @@ from .permissions import CustomPermission
 from rest_framework.permissions import AllowAny
 import django_filters.rest_framework
 from rest_framework import filters
-from ..consumers import liveData
+from ..consumers import liveData, AlgoWatchLogic
 
 kite = views.kite
 
@@ -401,8 +401,10 @@ class StartAlgoSingleAPI(APIView):
             instumentData = instrumentObject[0]
             print(instumentData["tradingsymbol"])
             if instrument_name and instumentData["tradingsymbol"] == instrument_name: 
-                views.timer.cancel()      
-                # AlgoWatchAdd()
+                # views.timer.cancel()      
+                
+                AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
+                
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
                 
                 consumers.updateSubscriberList(
@@ -412,7 +414,7 @@ class StartAlgoSingleAPI(APIView):
                 response['error'] = 0      
                 response['status'] = 'success'
                 response["data"] = "algo watch started"
-                views.coreLogic()
+                # views.coreLogic()
                 return Response(response)
             else:
                 response['error'] = 1
@@ -479,8 +481,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                     # views.timer.cancel()
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     
-                    # consumers.updateSubscriberList(
-                    #     instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                    AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
            
                     models.AlgoWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
