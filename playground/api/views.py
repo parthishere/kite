@@ -490,10 +490,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                         instumentData["instrument_token"], instumentData["tradingsymbol"], False)
                      
                     algo_obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
-                    
-                   
-                    
-                    
+ 
                     
                     settings = models.Preferences.objects.all()
                     liveValues = liveData[algo_obj.instruments]
