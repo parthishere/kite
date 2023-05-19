@@ -23,7 +23,7 @@ import datetime
 import time
 from random import randint
 from time import sleep
-from .consumers import liveData, startLiveConnection, updateSubscriberList, updatePostions, updatePNL, fetchAlgoWatch
+from .consumers import liveData, startLiveConnection, updateSubscriberList, updatePostions, updatePNL
 from django.http import JsonResponse
 from datetime import datetime, date, timedelta, time as dt_time
 from time import gmtime, strftime

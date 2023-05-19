@@ -19,7 +19,6 @@ import logging
 # logger = logging.getLogger()
 logging.basicConfig(filename='weberror.log', level=logging.DEBUG)
 logger = logging.getLogger('spam')
-fetchAlgoWatch = False
 subscriberlist = {}
 defaultsubscriberlist = {256265: 'NIFTY 50', 260105: 'NIFTY BANK'}
 liveData = {}
@@ -174,10 +173,10 @@ class MyAsyncConsumer(AsyncConsumer):
                 valDict["position"] = newPositionsdict['new']
                 valDict["totalpnl"] = updatedPNL.get('pnl')
                 valDict['slHits'] = await getSlHits()
-                valDict['fetchALgoWatch'] = fetchAlgoWatch
+                # valDict['fetchALgoWatch'] = fetchAlgoWatch
                 
-                if fetchAlgoWatch:
-                    fetchAlgoWatch = False
+                # if fetchAlgoWatch:
+                #     fetchAlgoWatch = False
                 # counter+=1
                 # print(valDict)
                 await self.send({
