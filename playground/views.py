@@ -597,6 +597,9 @@ def watchForAlgowatchlistBuySellLogic():
                 print("+++++++++++++++++++++++++++ 2")
                 postions = Positions.objects.filter(
                     instruments=items.instruments)
+                
+                items.algoStartTime = datetime.now()
+                items.save()
                 if postions:
                     potionObject = postions.values()[0]
                     setQty = abs(potionObject['qty'])
@@ -1078,7 +1081,7 @@ def tradeInitiateWithSLTG(type, exchangeType, scriptQty, scriptCode, ltp, sl, tg
             if isFromAlgo:
                 logging.warning("Algo Open Position Updated=================")
                 AlgoWatchlist.objects.filter(
-                    instruments=scriptCode).update(openPostion=True, algoStartTime=datetime.now())
+                    instruments=scriptCode).update(openPostion=True)
 
                 entryPrice11 = float(AlgoWatchlist.objects.filter(instruments=scriptCode).values()[0]["entryprice"])
                 if entryPrice11==0.0:
