@@ -10,7 +10,7 @@ import pyotp
 from .. import models
 from . import serializers
 from datetime import datetime, timedelta
-from ..views import coreLogic,login_in_zerodha,updateSubscriberList,instrumentObjectToManualWatchlistObject,instrumentObjectToAlgoWatchlistObject
+from playground.views import coreLogic,login_in_zerodha,updateSubscriberList,instrumentObjectToManualWatchlistObject,instrumentObjectToAlgoWatchlistObject
 import pyotp
 from .. import models
 from . import serializers
@@ -86,6 +86,11 @@ def logoutUser(request):
         # views.download_thread.stop()
         print("before token")
         print(kite.access_token)
+        
+        try:
+            views.timer.cancel()
+        except:
+            pass
         
         kite.invalidate_access_token()
         kite.set_access_token(None)
