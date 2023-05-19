@@ -40,11 +40,14 @@ def stop(delay):
 
 if __name__ == "__main__":
     while True:
-        a = str(input("enter 's' or 't' to start and stop: ")).lower()
-        b = int(input("enter delay: "))
+        try:
+          a, b = str(input("enter 's' or 't' to start and stop and with space enter delay: (example: 's 0.2') ")).lower().split(" ")
+        except:
+          break;
+        # b = float(input("enter delay: "))
         if a == "s":
-            start(b)
+            start(float(b))
         elif a == "t":
-            stop(b)
+            stop(float(b))
         else:
             break;
