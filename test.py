@@ -11,9 +11,9 @@ def start(delay):
     for i in array_instrument:
         sleep(delay);
         payload = json.dumps({
-        "instrument": i,
-        "instrumentQuantity": 1,
-        "is_algo": True
+            "instrument": i,
+            "instrumentQuantity": 1,
+            "is_algo": True
         })
         headers = {
         'Content-Type': 'application/json'
@@ -26,9 +26,9 @@ def stop(delay):
     for i in array_instrument:
         sleep(delay);
         payload = json.dumps({
-            "instrument": i,
-            "instrumentQuantity": 0,
-            "is_algo": True
+             "instrument": i,
+             "instrumentQuantity": 0,
+             "is_algo": True
         })
         headers = {
             'Content-Type': 'application/json'

@@ -401,16 +401,58 @@ class StartAlgoSingleAPI(APIView):
                     tradingsymbol=instrument_name).values()
             instumentData = instrumentObject[0]
             print(instumentData["tradingsymbol"])
+            
+            
+            
+            settings = models.Preferences.objects.all()
+            # TG : Get % value from settings
+            tg = settings.values()[0]['target']
+            # SL : Get % value from settings
+            sl = settings.values()[0]['stoploss']
+           
+            ordp = settings.values()[0]['openingrange']
+            # ORD :  Get true of fale from Settings to apply ORD or not
+            ordtick = settings.values()[0]['openingrangebox']
+            # 1. Run a loog for all watchlist items
+            obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
+            
+            
+            
             if instrument_name and instumentData["tradingsymbol"] == instrument_name: 
                 views.timer.cancel()      
                 
-                AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
+                # AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
                 
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
                 
-                consumers.updateSubscriberList(
-                    instumentData["instrument_token"], instumentData["tradingsymbol"], True)
-            
+                # consumers.updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
+                if obj.instruments in liveData:
+                    liveValues = liveData[instrument_name]
+                    # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
+                    partValue = (ordp*liveValues['Open'])/100
+                    ubl = liveValues['Open'] + partValue
+                    # LBL : #then LBL(Lower band limit)) is 2352 (2% of 2400, 2400 - 48 = 2352)
+                    lbl = liveValues['Open'] - partValue
+                    
+                        
+                    if ordtick:  # IF_ORD True check if open is in range
+                            # IF_check CMP > OPEN and (CMP > LBL and CMP > UPL)
+                        if (liveValues['LTP'] > liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl):
+                            print('SCRIPT QUANTITY=========================', 1)
+                            logging.warning(
+                                "Opening range is selected so only checking both ltp > Open and ltp in in range")
+                            views.tradeInitiateWithSLTG(type="BUY", scriptQty=obj.qty, exchangeType=obj.exchangeType, sl=sl, tg=tg,
+                                                ltp=liveValues['LTP'], scriptCode=obj.instruments, isFromAlgo=True, orderId="", isCloseTrade=False)
+                            models.AlgoWatchlist.objects.filter(instruments=obj.instruments).update(qty=1)
+
+                        # ELSE_#check CMP < OPEN and (CMP > LBL and CMP > UPL)
+                        elif (liveValues['LTP'] < liveValues['Open']) and (liveValues['LTP'] < ubl and liveValues['LTP'] > lbl):
+                            print('SCRIPT QUANTITY=========================', 2)
+                            logging.warning(
+                                "Opening range is selected so only checking both ltp < Open and ltp in in range")
+                            views.tradeInitiateWithSLTG(type="SELL", scriptQty=obj.qty, exchangeType=obj.exchangeType, sl=sl, tg=tg,
+                                                ltp=liveValues['LTP'], scriptCode=obj.instruments, isFromAlgo=True, orderId="", isCloseTrade=False)
+                            models.AlgoWatchlist.objects.filter(instruments=obj.instruments).update(qty=1)
                 
                 response['error'] = 0      
                 response['status'] = 'success'
@@ -482,15 +524,8 @@ class StopAlgoAndManualSingleAPI(APIView):
                     views.timer.cancel()
                     print("Stop Single from Algowatchlist +++++++++++++++++++++++++++++++++++++")
                     
-                    AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-           
-                    models.AlgoWatchlist.objects.filter(
-                        instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
-                    consumers.updateSubscriberList(
-                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
-                     
+                    # AlgoWatchLogic(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
                     algo_obj = models.AlgoWatchlist.objects.get(instruments=instrument_name)
- 
                     
                     settings = models.Preferences.objects.all()
                     liveValues = liveData[algo_obj.instruments]
@@ -505,6 +540,13 @@ class StopAlgoAndManualSingleAPI(APIView):
                     lbl = liveValues['Open'] - partValue
                     postions = models.Positions.objects.filter(
                     instruments=instrument_name)
+           
+                    models.AlgoWatchlist.objects.filter(
+                        instruments=instrument_name).update(startAlgo=False, qty=int(instrument_quantity))
+                    consumers.updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                     
+ 
+                    
                     if postions:
                         potionObject = postions.values()[0]
                         setQty = abs(potionObject['qty'])
@@ -527,8 +569,7 @@ class StopAlgoAndManualSingleAPI(APIView):
                     models.ManualWatchlist.objects.filter(
                         instruments=instrument_name).update(startAlgo=False, isSellClicked=False, isBuyClicked=False, qty=int(instrument_quantity))
                 
-                consumers.updateSubscriberList(
-                        instumentData["instrument_token"], instumentData["tradingsymbol"], False)
+                # consumers.updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], False)
             
                 
                 

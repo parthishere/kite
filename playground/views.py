@@ -627,6 +627,7 @@ def watchForAlgowatchlistBuySellLogic():
                             print('SCRIPT QUANTITY=========================', 6)
                             tradeInitiateWithSLTG(type="SELL", scriptQty=setQty, exchangeType=items.exchangeType, sl=sl, tg=tg,
                                                   ltp=liveValues['LTP'], scriptCode=items.instruments, isFromAlgo=True, orderId=potionObject['orderId'], isCloseTrade=True)
+                            AlgoWatchlist.objects.filter(instruments=items.instruments).update(qty=1)
                         # else:
                         #     print("Position BUYALGO, No SL, No TG so continue")
                     # ELSE_check if positino is SELL
