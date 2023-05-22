@@ -426,7 +426,8 @@ class StartAlgoSingleAPI(APIView):
                 models.AlgoWatchlist.objects.filter(instruments=instrument_name).update(entryprice=0.0 , slHitCount = 0, startAlgo=True, qty=int(instrument_quantity))
                 
                 # consumers.updateSubscriberList(instumentData["instrument_token"], instumentData["tradingsymbol"], True)
-                if obj.instruments in liveData:
+                if obj.instruments in liveData and views.CheckTradingTime():
+                # if obj.instruments in liveData:
                     liveValues = liveData[instrument_name]
                     # UBL : #then UBL(Upper band limit)) is 2448 (2% of 2400, 2400 + 48 = 2448)
                     partValue = (ordp*liveValues['Open'])/100
