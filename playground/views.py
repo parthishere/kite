@@ -511,7 +511,7 @@ def CheckTradingTime():
 
 def coreLogic():  # A methond to check
     global timer
-    timer = threading.Timer(0.3, coreLogic)
+    timer = threading.Timer(0.6, coreLogic)
     timer.start()
     checkTrade = CheckTradingTime()
 
